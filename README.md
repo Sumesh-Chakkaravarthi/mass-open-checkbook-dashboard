@@ -1,5 +1,7 @@
 # Massachusetts Open Checkbook Dashboard
 
+**[🔴 LIVE DEMO: Click Here](https://sumesh-chakkaravarthi.github.io/mass-open-checkbook-dashboard/)**
+
 This is a **Plotly Dash** application designed to analyze vendor contracts and SDO (Supplier Diversity Office) commitments for the Commonwealth of Massachusetts.
 
 ## Features
@@ -7,17 +9,17 @@ This is a **Plotly Dash** application designed to analyze vendor contracts and S
 - **Data Visualization**: Over 10 interactive charts including bar charts, treemaps, scatter plots, and radar charts.
 - **Search & Filter**: Filter IT companies by sub-category (Hardware, Software, Telecom).
 
-## Installation
+## Installation (For Developers)
 1. Clone the repository:
    ```bash
    git clone https://github.com/Sumesh-Chakkaravarthi/mass-open-checkbook-dashboard.git
    cd mass-open-checkbook-dashboard
    ```
 
-2. Create a virtual environment (optional but recommended):
+2. Create a virtual environment:
    ```bash
    python -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   source .venv/bin/activate
    ```
 
 3. Install dependencies:

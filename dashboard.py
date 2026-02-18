@@ -81,8 +81,8 @@ def load_vendor_data(filepath):
         metadata_kw = ['Master Contract', 'Solicitation Enabled', 'Master MBPO',
                         'Bid and Contract', 'Category and Vendor', 'Category Development',
                         'Mass Gov', 'OSD Help Desk', 'N/A']
-        mask = df['Company'].astype(str).apply(
-            lambda x: not any(kw.lower() in x.lower() for kw in metadata_kw)
+        mask = df['Company'].apply(
+            lambda x: not any(kw.lower() in str(x).lower() for kw in metadata_kw)
         )
         df = df[mask].copy()
         df['SDO_Pct'] = pd.to_numeric(df['SDO_Pct'], errors='coerce')

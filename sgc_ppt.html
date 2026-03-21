@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SGC Presentation</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#1a1a2e;display:flex;flex-direction:column;align-items:center;padding:20px;gap:12px}
+.controls{display:flex;align-items:center;gap:12px;position:sticky;top:10px;z-index:100;background:#0d1b2a;padding:10px 20px;border-radius:30px;border:1px solid rgba(255,255,255,0.1)}
+.ctrl-btn{background:#185FA5;color:#fff;border:none;padding:7px 18px;border-radius:20px;cursor:pointer;font-size:13px;font-weight:500}
+.ctrl-btn:hover{background:#1a72c4}
+.ctrl-btn:disabled{opacity:.4;cursor:not-allowed}
+.slide-counter{color:#8fa3b1;font-size:13px;min-width:80px;text-align:center}
+.slide-jump{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.sjbtn{width:28px;height:28px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.2);background:transparent;color:#8fa3b1;cursor:pointer;font-size:11px;font-weight:600}
+.sjbtn.active{background:#185FA5;border-color:#185FA5;color:#fff}
+.hint{color:#8fa3b1;font-size:11px;margin-top:4px}
+
+/* SLIDE BASE */
+.slide{width:960px;min-height:540px;border-radius:12px;overflow:hidden;display:none;position:relative;box-shadow:0 8px 40px rgba(0,0,0,0.5)}
+.slide.active{display:flex;flex-direction:column}
+
+/* LAYOUTS */
+.slide-cover{background:#0d1b2a;justify-content:center;align-items:center;text-align:center}
+.slide-dark{background:#0d1b2a}
+.slide-light{background:#f4f6f9}
+.slide-split{background:#f4f6f9;flex-direction:row}
+
+/* COVER */
+.cover-logo{width:60px;height:60px;background:#185FA5;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:22px;font-weight:700;color:#fff}
+.cover-tag{font-size:12px;color:#185FA5;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px}
+.cover-title{font-size:38px;font-weight:700;color:#fff;line-height:1.2;margin-bottom:10px}
+.cover-title span{color:#185FA5}
+.cover-sub{font-size:15px;color:#8fa3b1;margin-bottom:32px;max-width:600px}
+.cover-meta{display:flex;gap:32px;justify-content:center}
+.cover-meta-item{text-align:center}
+.cover-meta-item .label{font-size:10px;color:#8fa3b1;text-transform:uppercase;letter-spacing:.5px}
+.cover-meta-item .val{font-size:13px;color:#fff;font-weight:600;margin-top:3px}
+.cover-bar{position:absolute;bottom:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#185FA5,#1D9E75,#185FA5)}
+
+/* DARK SLIDE LAYOUT */
+.dark-header{background:#185FA5;padding:22px 40px 18px;border-bottom:3px solid #0C447C}
+.dark-header .slide-num{font-size:11px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.dark-header h2{font-size:24px;font-weight:700;color:#fff}
+.dark-header .sub{font-size:13px;color:rgba(255,255,255,0.75);margin-top:4px}
+.dark-body{flex:1;padding:28px 40px;background:#0d1b2a}
+
+/* LIGHT SLIDE LAYOUT */
+.light-header{background:#185FA5;padding:22px 40px 18px}
+.light-header .slide-num{font-size:11px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.light-header h2{font-size:24px;font-weight:700;color:#fff}
+.light-header .sub{font-size:13px;color:rgba(255,255,255,0.8);margin-top:4px}
+.light-body{flex:1;padding:28px 40px;background:#f4f6f9}
+
+/* COMPONENTS */
+.bullet-list{list-style:none;display:flex;flex-direction:column;gap:12px}
+.bullet-list li{display:flex;gap:12px;align-items:flex-start;font-size:14px;color:#e0e6f0;line-height:1.5}
+.bullet-list li .dot{width:8px;height:8px;border-radius:50%;background:#185FA5;flex-shrink:0;margin-top:6px}
+.bullet-list.dark-txt li{color:#1a1a2e}
+.bullet-list.dark-txt li .dot{background:#185FA5}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+
+.card{background:#fff;border-radius:10px;padding:16px 18px;border:1px solid #e0e6ef}
+.card-dark{background:rgba(255,255,255,0.06);border-radius:10px;padding:16px 18px;border:1px solid rgba(255,255,255,0.1)}
+.card h4{font-size:12px;font-weight:600;color:#185FA5;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.card-dark h4{font-size:12px;font-weight:600;color:#5ba3e8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.card p,.card li{font-size:13px;color:#3a4a5c;line-height:1.55}
+.card-dark p,.card-dark li{font-size:13px;color:#c8d6e8;line-height:1.55}
+.card ul,.card-dark ul{list-style:none;display:flex;flex-direction:column;gap:6px}
+.card ul li::before,.card-dark ul li::before{content:'→ ';color:#185FA5;font-weight:600}
+
+.stat-box{background:#185FA5;border-radius:10px;padding:16px;text-align:center}
+.stat-box .num{font-size:32px;font-weight:700;color:#fff}
+.stat-box .lbl{font-size:11px;color:rgba(255,255,255,0.75);margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+
+.tag{display:inline-block;background:#e8f0fb;color:#185FA5;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;margin:2px}
+.tag-dark{display:inline-block;background:rgba(24,95,165,0.3);color:#5ba3e8;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;margin:2px}
+
+.divider{height:1px;background:rgba(255,255,255,0.1);margin:16px 0}
+.divider-light{height:1px;background:#e0e6ef;margin:14px 0}
+
+.highlight-box{background:rgba(24,95,165,0.15);border-left:4px solid #185FA5;border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:14px}
+.highlight-box p{font-size:13px;color:#c8d6e8;line-height:1.6}
+.highlight-box.light{background:#e8f0fb;border-left-color:#185FA5}
+.highlight-box.light p{color:#1a3a5c}
+
+.section-label{font-size:10px;font-weight:600;color:#185FA5;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.big-text{font-size:18px;font-weight:600;color:#fff;line-height:1.4}
+
+.footer-bar{position:absolute;bottom:0;left:0;right:0;height:36px;background:#0C447C;display:flex;align-items:center;justify-content:space-between;padding:0 40px;font-size:11px;color:rgba(255,255,255,0.5)}
+.footer-bar-light{position:absolute;bottom:0;left:0;right:0;height:36px;background:#185FA5;display:flex;align-items:center;justify-content:space-between;padding:0 40px;font-size:11px;color:rgba(255,255,255,0.8)}
+
+.rec-item{display:flex;gap:14px;align-items:flex-start;margin-bottom:14px}
+.rec-num{width:32px;height:32px;border-radius:50%;background:#185FA5;color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rec-text h5{font-size:13px;font-weight:600;color:#fff;margin-bottom:3px}
+.rec-text p{font-size:12px;color:#8fa3b1;line-height:1.5}
+.rec-text.light h5{color:#1a1a2e}
+.rec-text.light p{color:#5a6a7a}
+
+.arch-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.arch-box{background:rgba(24,95,165,0.25);border:1.5px solid #185FA5;border-radius:8px;padding:8px 14px;font-size:12px;color:#c8d6e8;font-weight:500;text-align:center;flex:1}
+.arch-arrow{color:#185FA5;font-size:18px;flex-shrink:0}
+</style>
+</head>
+<body>
+
+<div class="controls">
+  <button class="ctrl-btn" id="prevBtn" onclick="changeSlide(-1)">&#8592; Prev</button>
+  <span class="slide-counter" id="counter">1 / 12</span>
+  <button class="ctrl-btn" id="nextBtn" onclick="changeSlide(1)">Next &#8594;</button>
+</div>
+<div class="slide-jump" id="jumpBtns"></div>
+<p class="hint">Screenshot each slide individually for your PowerPoint</p>
+
+<!-- ===== SLIDE 1: COVER ===== -->
+<div class="slide slide-cover active" id="s1">
+  <div class="cover-logo">SGC</div>
+  <div class="cover-tag">ALY6980 · Capstone Project · Winter 2026</div>
+  <div class="cover-title">SGC Growth Intelligence<br><span>Toolkit & Dashboard</span></div>
+  <div class="cover-sub">Transforming static vendor and company lists into an actionable Business Development Funnel for SGC leadership</div>
+  <div class="cover-meta">
+    <div class="cover-meta-item"><div class="label">Institution</div><div class="val">Northeastern University CPS</div></div>
+    <div class="cover-meta-item"><div class="label">Course</div><div class="val">ALY6980 Capstone</div></div>
+    <div class="cover-meta-item"><div class="label">Term</div><div class="val">Winter 2026</div></div>
+  </div>
+  <div class="cover-bar"></div>
+</div>
+
+<!-- ===== SLIDE 2: PROBLEM STATEMENT ===== -->
+<div class="slide slide-dark" id="s2">
+  <div class="dark-header">
+    <div class="slide-num">Slide 01</div>
+    <h2>Problem Statement</h2>
+    <div class="sub">The challenge SGC faces without a data-driven engagement system</div>
+  </div>
+  <div class="dark-body" style="padding-bottom:50px">
+    <div class="highlight-box" style="margin-bottom:20px">
+      <p>SGC, a consulting firm seeking to bid on contracts across Massachusetts industries, currently relies on manual data lookup across thousands of vendor and company records — making strategic, resource-efficient decision-making nearly impossible.</p>
+    </div>
+    <div class="two-col">
+      <div>
+        <div class="section-label" style="margin-bottom:10px">Core Pain Points</div>
+        <ul class="bullet-list">
+          <li><span class="dot"></span><span>No centralized view of which industry sectors hold the highest concentration of target companies for outreach</span></li>
+          <li><span class="dot"></span><span>Vendor landscape is fragmented — medical, logistical, and professional providers tracked in separate static lists</span></li>
+          <li><span class="dot"></span><span>SDO (Supplier Diversity & Opportunity) compliance data is unstructured, limiting CSR reporting capabilities</span></li>
+          <li><span class="dot"></span><span>No visibility into federal contract spending patterns in Massachusetts that signal where SGC should focus bids</span></li>
+        </ul>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="stat-box"><div class="num">1,621</div><div class="lbl">Vendors across unstructured lists</div></div>
+        <div class="stat-box" style="background:#0C447C"><div class="num">147</div><div class="lbl">Target companies with no unified view</div></div>
+        <div class="stat-box" style="background:#0F6E56"><div class="num">$19.5B</div><div class="lbl">MA federal spend with no strategic map</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bar"><span>SGC Growth Intelligence Toolkit</span><span>Northeastern University · ALY6980</span></div>
+</div>
+
+<!-- ===== SLIDE 3: PROJECT OBJECTIVES ===== -->
+<div class="slide slide-dark" id="s3">
+  <div class="dark-header">
+    <div class="slide-num">Slide 02</div>
+    <h2>Project Objectives</h2>
+    <div class="sub">Three guiding questions that shaped our analytical approach</div>
+  </div>
+  <div class="dark-body" style="padding-bottom:50px">
+    <div class="three-col" style="margin-bottom:20px">
+      <div class="card-dark">
+        <h4>01 — Market Density</h4>
+        <p>Which industry sectors (Healthcare, Tech, Finance) show the highest concentration of SGC Target companies for immediate consulting outreach?</p>
+      </div>
+      <div class="card-dark">
+        <h4>02 — Vendor Optimization</h4>
+        <p>How can we visualize the vendor landscape to ensure a balanced mix of medical, logistical (VEH), and professional (PRF) service providers?</p>
+      </div>
+      <div class="card-dark">
+        <h4>03 — Compliance & Diversity</h4>
+        <p>What is the distribution of SDO Commitment Percentages across the vendor pool, and how does this impact SGC's CSR reporting?</p>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="section-label" style="margin-bottom:10px">High-Level Goal</div>
+    <div class="highlight-box">
+      <p>Deliver a functional, data-driven dashboard that transforms static lists of thousands of companies and vendor contacts into an <strong style="color:#5ba3e8">actionable Business Development Funnel</strong> — enabling SGC leadership to move from manual data lookup to strategic, educated decision-making regarding resource allocation and partnership strategy.</p>
+    </div>
+  </div>
+  <div class="footer-bar"><span>SGC Growth Intelligence Toolkit</span><span>Northeastern University · ALY6980</span></div>
+</div>
+
+<!-- ===== SLIDE 4: DATA SOURCES ===== -->
+<div class="slide slide-dark" id="s4">
+  <div class="dark-header">
+    <div class="slide-num">Slide 03</div>
+    <h2>Data Sources & Dataset Overview</h2>
+    <div class="sub">Primary datasets used to build the SGC Growth Intelligence Toolkit</div>
+  </div>
+  <div class="dark-body" style="padding-bottom:50px">
+    <div class="two-col" style="margin-bottom:20px">
+      <div class="card-dark">
+        <h4>Dataset 1 — Categorized Companies</h4>
+        <ul>
+          <li>147 companies across 10 industry sectors</li>
+          <li>Sectors: Healthcare, Finance, Tech, Energy, Education & more</li>
+          <li>Includes national, local, and SGC-targeted classifications</li>
+          <li>58 priority accounts flagged for immediate outreach</li>
+        </ul>
+      </div>
+      <div class="card-dark">
+        <h4>Dataset 2 — Vendor Contact Details</h4>
+        <ul>
+          <li>1,621 vendors across 15 service categories</li>
+          <li>Service codes: MED, FAC, ITT, PRF, VEH & more</li>
+          <li>Includes contact names, roles, emails, phone numbers</li>
+          <li>1,234 vendors with SDO commitment % data</li>
+        </ul>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="card-dark">
+        <h4>Dataset 3 — USASpending.gov (Massachusetts)</h4>
+        <ul>
+          <li>Federal contract & grant obligations by NAICS code</li>
+          <li>Top 10 awarding agencies by spend in MA</li>
+          <li>HHS leads at $14.9B; Facilities Support tops NAICS at $19.5B</li>
+        </ul>
+      </div>
+      <div>
+        <div class="section-label" style="margin-bottom:10px">Key Dataset Stats</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <span class="tag-dark">147 Companies</span>
+          <span class="tag-dark">1,621 Vendors</span>
+          <span class="tag-dark">10 Sectors</span>
+          <span class="tag-dark">15 Service Codes</span>
+          <span class="tag-dark">58 SGC Targets</span>
+          <span class="tag-dark">Federal MA Spend</span>
+          <span class="tag-dark">SDO % per Vendor</span>
+          <span class="tag-dark">Contact Directory</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bar"><span>SGC Growth Intelligence Toolkit</span><span>Northeastern University · ALY6980</span></div>
+</div>
+
+<!-- ===== SLIDE 5: METHODOLOGY ===== -->
+<div class="slide slide-dark" id="s5">
+  <div class="dark-header">
+    <div class="slide-num">Slide 04</div>
+    <h2>Methodology & System Architecture</h2>
+    <div class="sub">How raw data was transformed into a strategic decision-making toolkit</div>
+  </div>
+  <div class="dark-body" style="padding-bottom:50px">
+    <div class="section-label" style="margin-bottom:12px">Pipeline Architecture</div>
+    <div class="arch-row">
+      <div class="arch-box">Raw Data Sources<br><span style="font-size:10px;color:#8fa3b1">Companies · Vendors · USASpending</span></div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box">Data Cleaning<br><span style="font-size:10px;color:#8fa3b1">Deduplication · Standardization</span></div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box">Data Merging<br><span style="font-size:10px;color:#8fa3b1">Indexed by Service Code</span></div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box">Analysis & Visualization<br><span style="font-size:10px;color:#8fa3b1">Chart.js · HTML/CSS</span></div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box">Interactive Dashboard<br><span style="font-size:10px;color:#8fa3b1">5-Tab Deployment</span></div>
+    </div>
+    <div class="divider"></div>
+    <div class="two-col">
+      <div>
+        <div class="section-label" style="margin-bottom:8px">Analytical Methods</div>
+        <ul class="bullet-list">
+          <li><span class="dot"></span><span>Sector density analysis — company count by industry with SGC target flagging</span></li>
+          <li><span class="dot"></span><span>SDO tier segmentation — vendors bucketed into 5 diversity commitment levels</span></li>
+          <li><span class="dot"></span><span>National vs local presence mapping across all 10 sectors</span></li>
+          <li><span class="dot"></span><span>Federal spend alignment — NAICS obligations mapped to SGC service categories</span></li>
+        </ul>
+      </div>
+      <div>
+        <div class="section-label" style="margin-bottom:8px">Tools & Technologies</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+          <span class="tag-dark">Python / Pandas</span>
+          <span class="tag-dark">Excel</span>
+          <span class="tag-dark">Chart.js</span>
+          <span class="tag-dark">HTML / CSS / JS</span>
+          <span class="tag-dark">USASpending.gov</span>
+        </div>
+        <div class="highlight-box" style="margin:0">
+          <p style="font-size:12px">All three datasets were merged into a unified relational structure indexed by service code, enabling cross-dataset filtering in the dashboard.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bar"><span>SGC Growth Intelligence Toolkit</span><span>Northeastern University · ALY6980</span></div>
+</div>
+
+<!-- ===== SLIDE 6: VISUAL 1 & 2 ===== -->
+<div class="slide slide-light" id="s6">
+  <div class="light-header">
+    <div class="slide-num">Slide 05</div>
+    <h2>Visual Analysis — Sector Density & Company Presence</h2>
+    <div class="sub">Which sectors hold the most SGC target companies, and how does national vs local presence compare?</div>
+  </div>
+  <div class="light-body" style="padding-bottom:50px">
+    <div class="two-col">
+      <div>
+        <div class="section-label" style="color:#185FA5;margin-bottom:6px">Fig 1 — Company count by sector (all companies)</div>
+        <div style="background:#fff;border-radius:10px;padding:14px;border:1px solid #e0e6ef">
+          <div style="position:relative;height:220px"><canvas id="pptBar"></canvas></div>
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:#5a6a7a;line-height:1.5"><strong>Finding:</strong> Finance & Insurance leads with 27 companies; Technology & Engineering (24) and Healthcare (21) follow as top SGC opportunity sectors.</div>
+      </div>
+      <div>
+        <div class="section-label" style="color:#185FA5;margin-bottom:6px">Fig 2 — National vs local presence by industry</div>
+        <div style="background:#fff;border-radius:10px;padding:14px;border:1px solid #e0e6ef">
+          <div style="position:relative;height:220px"><canvas id="pptNL"></canvas></div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;font-size:10px;color:#5a6a7a">
+            <span><span style="display:inline-block;width:8px;height:8px;background:#00BCD4;border-radius:2px;margin-right:3px"></span>National & Local</span>
+            <span><span style="display:inline-block;width:8px;height:8px;background:#7C4DFF;border-radius:2px;margin-right:3px"></span>Local Only</span>
+            <span><span style="display:inline-block;width:8px;height:8px;background:#FF7043;border-radius:2px;margin-right:3px"></span>SGC Target</span>
+          </div>
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:#5a6a7a;line-height:1.5"><strong>Finding:</strong> Finance & Insurance and Healthcare combined account for 18 of 58 SGC priority targets, with strong national and local representation in both.</div>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bar-light"><span>SGC Growth Intelligence Toolkit</span><span>Northeastern University · ALY6980</span></div>
+</div>
+
+<!-- ===== SLIDE 7: VISUAL 3 & 4 ===== -->
+<div class="slide slide-light" id="s7">
+  <div class="light-header">
+    <div class="slide-num">Slide 06</div>
+    <h2>Visual Analysis — SDO Commitment & Diversity Compliance</h2>
+    <div class="sub">Distribution of supplier diversity commitments and which categories lead on CSR performance</div>
+  </div>
+  <div class="light-body" style="padding-bottom:50px">
+    <div class="two-col">
+      <div>
+        <div class="section-label" style="color:#185FA5;margin-bottom:6px">Fig 3 — SDO commitment tier distribution (1,234 vendors)</div>
+        <div style="background:#fff;border-radius:10px;padding:14px;border:1px solid #e0e6ef;display:flex;flex-direction:column;align-items:center">
+          <div style="position:relative;height:200px;width:100%"><canvas id="pptDonut"></canvas></div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;font-size:10px;color:#5a6a7a;justify-content:center">
+            <span><span style="display:inline-block;width:8px;height:8px;background:#B5D4F4;border-radius:2px;margin-right:3px"></span>0–5%: 676</span>
+            <span><span style="display:inline-block;width:8px;height:8px;background:#378ADD;border-radius:2px;margin-right:3px"></span>5–10%: 251</span>
+            <span><span style="display:inline-block;width:8px;height:8px;background:#185FA5;border-radius:2px;margin-right:3px"></span>10–20%: 224</span>
+            <span><span style="display:inline-block;width:8px;height:8px;background:#0C447C;border-radius:2px;margin-right:3px"></span>20–50%: 55</span>
+            <span><span style="display:inline-block;width:8px;height:8px;background:#042C53;border-radius:2px;margin-right:3px"></span>50%+: 28</span>
+          </div>
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:#5a6a7a;line-height:1.5"><strong>Finding:</strong> 54.8% of vendors commit less than 5% SDO, indicating significant room for SGC to champion diversity-first vendor selection in contract pitches.</div>
+      </div>
+      <div>
+        <div class="section-label" style="color:#185FA5;margin-bottom:6px">Fig 4 — Average SDO % by service category</div>
+        <div style="background:#fff;border-radius:10px;padding:14px;border:1px solid #e0e6ef">
+          <div style="position:relative;height:220px"><canvas id="pptSDO"></canvas></div>
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:#5a6a7a;line-height:1.5"><strong>Finding:</strong> Facilities (17.9%) and Staffing (13.2%) lead in diversity commitment — ideal segments for SGC's CSR-aligned contract pitches to government and non-profit clients.</div>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bar-light"><span>SGC Growth Intelligence Toolkit</span><span>Northeastern University · ALY6980</span></div>
+</div>
+
+<!-- ===== SLIDE 8: VISUAL 5 ===== -->
+<div class="slide slide-light" id="s8">
+  <div class="light-header">
+    <div class="slide-num">Slide 07</div>
+    <h2>Visual Analysis — Massachusetts Federal Spending</h2>
+    <div class="sub">Where federal contract dollars flow in Massachusetts — mapping SGC's highest-value bidding opportunities</div>
+  </div>
+  <div class="light-body" style="padding-bottom:50px">
+    <div class="section-label" style="color:#185FA5;margin-bottom:8px">Fig 5 — Top 10 NAICS sectors by federal obligations in Massachusetts (Source: USASpending.gov)</div>
+    <div style="background:#fff;border-radius:10px;padding:16px;border:1px solid #e0e6ef;margin-bottom:16px">
+      <div style="position:relative;height:280px"><canvas id="pptNAICS"></canvas></div>
+    </div>
+    <div class="three-col">
+      <div class="highlight-box light"><p><strong>Facilities Support ($19.5B)</strong> — SGC's facilities vendor network directly maps to the single largest federal obligation category in MA.</p></div>
+      <div class="highlight-box light"><p><strong>R&D & Engineering ($20.9B combined)</strong> — Professional services consulting is a natural SGC entry point into these high-spend categories.</p></div>
+      <div class="highlight-box light"><p><strong>Healthcare & Pharma ($16.4B combined)</strong> — Aligns with SGC's 9 Healthcare/Biotech target accounts and HHS as the top awarding agency.</p></div>
+    </div>
+  </div>
+  <div class="footer-bar-light"><span>SGC Growth Intelligence Toolkit</span><span>Northeastern University · ALY6980</span></div>
+</div>
+
+<!-- ===== SLIDE 9: KEY INSIGHTS ===== -->
+<div class="slide slide-dark" id="s9">
+  <div class="dark-header">
+    <div class="slide-num">Slide 08</div>
+    <h2>Key Insights & Strategic Findings</h2>
+    <div class="sub">Data-driven takeaways that directly inform SGC's business development strategy</div>
+  </div>
+  <div class="dark-body" style="padding-bottom:50px">
+    <div class="two-col">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="rec-item">
+          <div class="rec-num">1</div>
+          <div class="rec-text">
+            <h5>Finance & Healthcare dominate SGC's target landscape</h5>
+            <p>Finance & Insurance (27 companies, 9 targets) and Healthcare & Biotech (21 companies, 9 targets) represent the highest-density opportunity sectors for immediate outreach.</p>
+          </div>
+        </div>
+        <div class="rec-item">
+          <div class="rec-num">2</div>
+          <div class="rec-text">
+            <h5>Facilities is the strongest SDO performer</h5>
+            <p>With an average SDO of 17.9% and Sustainable Facilities averaging 35.3%, this category offers SGC the most compelling diversity narrative for CSR-conscious clients.</p>
+          </div>
+        </div>
+        <div class="rec-item">
+          <div class="rec-num">3</div>
+          <div class="rec-text">
+            <h5>54.8% of vendors fall below 5% SDO commitment</h5>
+            <p>A significant diversity gap exists across the vendor pool — SGC can position itself as a diversity-forward consulting partner to address this gap in client supply chains.</p>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="rec-item">
+          <div class="rec-num">4</div>
+          <div class="rec-text">
+            <h5>MA federal spend signals high-value contract verticals</h5>
+            <p>Facilities Support ($19.5B), Building Construction ($17.9B), and Aircraft Manufacturing ($12.9B) are the top NAICS categories — all serviceable through SGC's current vendor network.</p>
+          </div>
+        </div>
+        <div class="rec-item">
+          <div class="rec-num">5</div>
+          <div class="rec-text">
+            <h5>HHS & SSA represent 77.7% of top agency spend</h5>
+            <p>Healthcare-adjacent and social services consulting is the dominant federal investment category in MA — a direct strategic priority for SGC's government contract bidding.</p>
+          </div>
+        </div>
+        <div class="rec-item">
+          <div class="rec-num">6</div>
+          <div class="rec-text">
+            <h5>IT sector holds highest-SDO individual vendors</h5>
+            <p>NEWCOM Wireless (51%), Digit Outsource (46%), and CenturyLink (36%) are standout diversity-committed IT vendors SGC should prioritize in tech contract proposals.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bar"><span>SGC Growth Intelligence Toolkit</span><span>Northeastern University · ALY6980</span></div>
+</div>
+
+<!-- ===== SLIDE 10: CONCLUSION ===== -->
+<div class="slide slide-dark" id="s10">
+  <div class="dark-header">
+    <div class="slide-num">Slide 09</div>
+    <h2>Conclusion & Recommendations</h2>
+    <div class="sub">What SGC should do next with the Growth Intelligence Toolkit</div>
+  </div>
+  <div class="dark-body" style="padding-bottom:50px">
+    <div class="two-col">
+      <div>
+        <div class="section-label" style="margin-bottom:10px">Strategic Recommendations</div>
+        <div class="rec-item">
+          <div class="rec-num" style="width:24px;height:24px;font-size:11px">R1</div>
+          <div class="rec-text"><h5>Prioritize Finance & Healthcare outreach</h5><p>Activate the 18 combined SGC targets across these two sectors immediately using the vendor contact funnel.</p></div>
+        </div>
+        <div class="rec-item">
+          <div class="rec-num" style="width:24px;height:24px;font-size:11px;background:#0F6E56">R2</div>
+          <div class="rec-text"><h5>Leverage SDO data in contract pitches</h5><p>Use Facilities and Staffing SDO leaders as proof points when pitching CSR-aligned contracts to government and non-profit clients.</p></div>
+        </div>
+        <div class="rec-item">
+          <div class="rec-num" style="width:24px;height:24px;font-size:11px;background:#BA7517">R3</div>
+          <div class="rec-text"><h5>Target HHS & SSA-funded contracts in MA</h5><p>With $26.9B combined obligations, healthcare and social services federal contracts are SGC's highest-value bidding opportunity.</p></div>
+        </div>
+        <div class="rec-item">
+          <div class="rec-num" style="width:24px;height:24px;font-size:11px;background:#534AB7">R4</div>
+          <div class="rec-text"><h5>Expand vendor SDO data coverage</h5><p>387 vendors currently lack SDO data — enriching these records will strengthen SGC's diversity reporting and vendor selection process.</p></div>
+        </div>
+      </div>
+      <div>
+        <div class="section-label" style="margin-bottom:10px">Conclusion</div>
+        <div class="highlight-box" style="margin-bottom:12px">
+          <p>The SGC Growth Intelligence Toolkit successfully transforms thousands of unstructured company and vendor records into a <strong style="color:#5ba3e8">five-tab interactive dashboard</strong> that answers SGC's three core business questions on market density, vendor optimization, and diversity compliance.</p>
+        </div>
+        <div class="highlight-box">
+          <p>By integrating Massachusetts federal spending data from USASpending.gov, the toolkit goes beyond internal data to position SGC with a <strong style="color:#5ba3e8">real-world contract bidding strategy</strong> grounded in $100B+ of publicly tracked federal obligations.</p>
+        </div>
+        <div class="section-label" style="margin-top:14px;margin-bottom:8px">Next Steps</div>
+        <ul class="bullet-list" style="gap:7px">
+          <li><span class="dot"></span><span style="font-size:12px">Deploy dashboard to SGC leadership team for live use</span></li>
+          <li><span class="dot"></span><span style="font-size:12px">Refresh vendor and company data quarterly</span></li>
+          <li><span class="dot"></span><span style="font-size:12px">Integrate Tableau/PowerBI version for enterprise-scale filtering</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bar"><span>SGC Growth Intelligence Toolkit</span><span>Northeastern University · ALY6980</span></div>
+</div>
+
+<!-- ===== SLIDE 11: REFERENCES & THANK YOU ===== -->
+<div class="slide slide-cover" id="s11">
+  <div style="width:100%;max-width:700px;text-align:center">
+    <div class="cover-tag" style="margin-bottom:6px">Northeastern University · ALY6980 · Winter 2026</div>
+    <div class="cover-title" style="font-size:30px;margin-bottom:8px">Thank You</div>
+    <div style="font-size:14px;color:#8fa3b1;margin-bottom:28px">We welcome any questions from SGC leadership and our faculty reviewers.</div>
+    <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:20px 28px;text-align:left;border:1px solid rgba(255,255,255,0.1)">
+      <div class="section-label" style="margin-bottom:12px">References</div>
+      <ul style="list-style:none;display:flex;flex-direction:column;gap:8px">
+        <li style="font-size:11px;color:#8fa3b1">USASpending.gov — Federal Contract & Grant Obligations, Massachusetts, 2024</li>
+        <li style="font-size:11px;color:#8fa3b1">Commonwealth of Massachusetts — Statewide Contracts Vendor Database (mass.gov)</li>
+        <li style="font-size:11px;color:#8fa3b1">SGC Internal Dataset — Categorized Companies & Vendor Contact Details, Winter 2026</li>
+        <li style="font-size:11px;color:#8fa3b1">NAICS Association — North American Industry Classification System Codes, 2024</li>
+        <li style="font-size:11px;color:#8fa3b1">Northeastern University CPS — ALY6980 Capstone Project Guidelines, Winter 2026</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cover-bar"></div>
+</div>
+
+<script>
+// Navigation
+let cur=1;const total=11;
+function buildJumps(){
+  const c=document.getElementById('jumpBtns');
+  for(let i=1;i<=total;i++){
+    const b=document.createElement('button');
+    b.className='sjbtn'+(i===1?' active':'');
+    b.textContent=i;b.id='jb'+i;
+    b.onclick=()=>goTo(i);
+    c.appendChild(b);
+  }
+}
+function goTo(n){
+  document.getElementById('s'+cur).classList.remove('active');
+  document.getElementById('jb'+cur).classList.remove('active');
+  cur=n;
+  document.getElementById('s'+cur).classList.add('active');
+  document.getElementById('jb'+cur).classList.add('active');
+  document.getElementById('counter').textContent=cur+' / '+total;
+  document.getElementById('prevBtn').disabled=cur===1;
+  document.getElementById('nextBtn').disabled=cur===total;
+}
+function changeSlide(d){goTo(Math.max(1,Math.min(total,cur+d)));}
+buildJumps();
+document.getElementById('prevBtn').disabled=true;
+
+// CHARTS
+// PPT Bar — sector
+new Chart(document.getElementById('pptBar'),{
+  type:'bar',
+  data:{labels:["Healthcare","Education","Finance & Ins.","Gov & NP","Energy","Construction","Tech & Eng.","Hospitality","Publishing","Misc"],
+    datasets:[{data:[21,14,27,15,20,11,24,4,5,6],backgroundColor:['#185FA5','#0F6E56','#3266AD','#BA7517','#534AB7','#639922','#993C1D','#888780','#D4537E','#1D9E75'],borderRadius:4,borderSkipped:false}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.parsed.y} companies`}}},
+    scales:{x:{ticks:{font:{size:9},autoSkip:false,maxRotation:35},grid:{display:false}},y:{ticks:{font:{size:9}},grid:{color:'rgba(0,0,0,0.06)'}}}}
+});
+
+// PPT NL — national vs local
+new Chart(document.getElementById('pptNL'),{
+  type:'bar',
+  data:{labels:["Finance","Tech","Healthcare","Energy","Gov & NP","Education","Construction","Misc","Publishing","Hospitality"],
+    datasets:[
+      {label:'National & Local',data:[29,25,21,20,25,13,11,5,5,4],backgroundColor:'#00BCD4',borderRadius:3,borderSkipped:false},
+      {label:'Local Only',data:[11,4,20,9,5,7,4,2,1,1],backgroundColor:'#7C4DFF',borderRadius:3,borderSkipped:false},
+      {label:'SGC Target',data:[9,9,9,8,3,9,5,2,2,2],backgroundColor:'#FF7043',borderRadius:3,borderSkipped:false}
+    ]},
+  options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+    plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false}},
+    scales:{x:{stacked:true,ticks:{font:{size:9}},grid:{color:'rgba(0,0,0,0.06)'}},y:{stacked:true,ticks:{font:{size:9}},grid:{display:false}}}}
+});
+
+// PPT Donut — SDO dist
+new Chart(document.getElementById('pptDonut'),{
+  type:'doughnut',
+  data:{labels:["0–5%","5–10%","10–20%","20–50%","50%+"],
+    datasets:[{data:[676,251,224,55,28],backgroundColor:['#B5D4F4','#378ADD','#185FA5','#0C447C','#042C53'],borderWidth:2,borderColor:'#fff'}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.parsed} vendors`}}},cutout:'52%'}
+});
+
+// PPT SDO bar
+const cats=["IT Equip.","IT Services","IT Telecom","Facilities","Vehicle","Grocery","Laundry","Medical","MRO","Office","Professional","Print","Staffing","Waste"];
+const vals=[5.8,8.0,5.1,17.9,3.1,2.7,3.7,2.7,4.8,4.6,7.3,4.1,13.2,4.7];
+new Chart(document.getElementById('pptSDO'),{
+  type:'bar',
+  data:{labels:cats,datasets:[{data:vals,backgroundColor:vals.map(v=>v>=15?'#042C53':v>=8?'#185FA5':v>=5?'#378ADD':'#B5D4F4'),borderRadius:3,borderSkipped:false}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.parsed.y}% avg SDO`}}},
+    scales:{x:{ticks:{font:{size:8},autoSkip:false,maxRotation:35},grid:{display:false}},y:{ticks:{font:{size:9},callback:v=>v+'%'},grid:{color:'rgba(0,0,0,0.06)'}}}}
+});
+
+// PPT NAICS
+new Chart(document.getElementById('pptNAICS'),{
+  type:'bar',
+  data:{labels:["Facilities Support","Bldg Construction","Aircraft Mfg","Health Insurance","R&D Phys/Eng/Life (ext)","Offices of Physicians","Engineering Svc","Computer Systems","Pharma Mfg","R&D Phys/Life Sci"],
+    datasets:[{data:[19.55,17.92,12.93,11.05,8.30,7.68,7.58,7.02,5.31,4.96],backgroundColor:['#185FA5','#0F6E56','#534AB7','#BA7517','#1D9E75','#639922','#3266AD','#993C1D','#888780','#D4537E'],borderRadius:4,borderSkipped:false}]},
+  options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` $${c.parsed.x.toFixed(2)}B`}}},
+    scales:{x:{ticks:{font:{size:9},callback:v=>'$'+v+'B'},grid:{color:'rgba(0,0,0,0.06)'}},y:{ticks:{font:{size:9}},grid:{display:false}}}}
+});
+</script>
+</body>
+</html>

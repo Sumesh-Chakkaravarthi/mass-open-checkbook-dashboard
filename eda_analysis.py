@@ -37,9 +37,9 @@ warnings.filterwarnings('ignore')
 # ──────────────────────────────────────────────────────────────────
 # Configuration
 # ──────────────────────────────────────────────────────────────────
-VENDOR_FILE = "Copy of Vendor Contact Details (1).xlsx"
-CATEGORIZED_FILE = "List of Categorized_Companies (1).xlsx"
-OUTPUT_DIR = Path("output")
+VENDOR_FILE = "/Users/sumesh/Downloads/Copy of Vendor Contact Details (1).xlsx"
+CATEGORIZED_FILE = "/Users/sumesh/Downloads/List of Categorized_Companies (1).xlsx"
+OUTPUT_DIR = Path("/Users/sumesh/Projects/Antigravity/Capstoneoutput")
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 # Category abbreviation mapping
@@ -113,10 +113,10 @@ def load_vendor_data(filepath: str) -> pd.DataFrame:
         metadata_keywords = [
             'Master Contract', 'Solicitation Enabled', 'Master MBPO',
             'Bid and Contract', 'Category and Vendor', 'Category Development',
-            'Mass Gov', 'OSD Help Desk', 'N/A'
+            'Mass Gov', 'OSD Help Desk', 'N/A', 'Company', 'Description'
         ]
-        mask = df['Company'].astype(str).apply(
-            lambda x: not any(kw.lower() in x.lower() for kw in metadata_keywords)
+        mask = df['Company'].apply(
+            lambda x: not any(kw.lower() in str(x).lower() for kw in metadata_keywords)
         )
         df = df[mask].copy()
 
@@ -686,8 +686,296 @@ def main():
     bq8_vendor_count_vs_sdo(vendor_df)
     bq9_industry_diversity_heatmap(cat_df)
     bq10_it_vendor_concentration(vendor_df)
+    bq11_national_local_sdo_performance(vendor_df, cat_df)
+    bq12_national_dominance_by_category(vendor_df, cat_df)
+    bq13_agency_activity_sunburst(vendor_df)
+    bq14_global_top_recipients(vendor_df)
+    bq15_equity_compliance_tiers(vendor_df)
 
     print("\n" + "="*70)
+
+# ──────────────────────────────────────────────────────────────────
+# BQ13: Agency Activity Sunburst (Prefix -> Category)
+# ──────────────────────────────────────────────────────────────────
+def bq13_agency_activity_sunburst(vendor_df: pd.DataFrame):
+    """Breakdown of 'Agency' (Contract Prefix) activity metrics."""
+    print("\n" + "="*70)
+    print("BQ13: Agency Activity Sunburst (USA Spending Style)")
+    print("="*70)
+
+    df = vendor_df.copy()
+    # Extract Prefix (first 3 chars usually indicate department/agency type)
+    df['Prefix'] = df['Contract_Code'].astype(str).str[:3].str.upper()
+    
+    # Filter for valid prefixes (3 letters)
+    df = df[df['Prefix'].str.match(r'^[A-Z]{3}$')]
+    
+    # Calculate hierarchy
+    hierarchy = df.groupby(['Prefix', 'Category']).size().reset_index(name='Count')
+    
+    # Filter small groups for cleaner sunburst
+    hierarchy = hierarchy[hierarchy['Count'] > 5]
+    
+    print(f"\n  Top 5 'Agencies' (Contract Prefixes) by Volume:")
+    print(hierarchy.groupby('Prefix')['Count'].sum().sort_values(ascending=False).head().to_string())
+
+    # Plot
+    fig = plt.figure(figsize=(10, 10))
+    # Note: matplotlib doesn't have a built-in Sunburst. We'll use a nested pie (Donut) or Treemap.
+    # Actually, plotly is better for Suburst, but this script uses matplotlib.
+    # Let's use a Nested Pie Chart (Donut) to mimic it.
+    
+    # Outer Ring: Category
+    # Inner Ring: Prefix
+    
+    # Better yet: Let's use a Treemap as it's more standard for "Spending Explorer"
+    import squarify
+    
+    # Summarize by Prefix only for a clean "Agency" view
+    prefix_counts = df['Prefix'].value_counts().head(15)
+    
+    sizes = prefix_counts.values
+    labels = [f"{p}\n({c})" for p, c in prefix_counts.items()]
+    colors = sns.color_palette("Spectral", len(sizes))
+    
+    ax = plt.gca()
+    squarify.plot(sizes=sizes, label=labels, color=colors, alpha=0.8, 
+                  text_kwargs={'fontsize': 10, 'fontweight': 'bold'}, ax=ax)
+    
+    ax.axis('off')
+    ax.set_title('BQ13: Agency Activity Breakdown\n(Contracting Volume by Department Prefix)', 
+                 pad=20, fontsize=14, fontweight='bold')
+    
+    # Add annotation explaining the proxy
+    plt.figtext(0.5, 0.02, "Note: Contract Prefixes (e.g. FAC, ITE) used as proxy for Agencies", 
+                ha="center", fontsize=9, fontstyle='italic', color='#555')
+    
+    save_plot(fig, 'BQ13_Agency_Activity_Sunburst.png')
+
+
+# ──────────────────────────────────────────────────────────────────
+# BQ14: Global Top Recipients "Leaderboard"
+# ──────────────────────────────────────────────────────────────────
+def bq14_global_top_recipients(vendor_df: pd.DataFrame):
+    """Who are the biggest contractors statewide?"""
+    print("\n" + "="*70)
+    print("BQ14: Global Top Recipients Leaderboard")
+    print("="*70)
+
+    # Count all contracts across all categories
+    top_vendors = vendor_df['Company'].value_counts().head(10)
+    
+    print("\n  Top 10 Global Vendors:")
+    print(top_vendors.to_string())
+
+    # Plot
+    fig, ax = plt.subplots(figsize=(12, 7))
+    
+    bars = ax.barh(top_vendors.index, top_vendors.values, color='#00BCD4', edgecolor='white')
+    
+    ax.invert_yaxis()  # Top at top
+    ax.set_xlabel('Total Number of Contracts Awarded', fontweight='bold')
+    ax.set_title('BQ14: Top 10 Global Recipients (Statewide Leaderboard)', pad=15)
+    
+    # Labels
+    for bar, val in zip(bars, top_vendors.values):
+        ax.text(bar.get_width() + 0.5, bar.get_y() + bar.get_height()/2, 
+                str(val), va='center', fontweight='bold', color='#333')
+
+    fig.tight_layout()
+    save_plot(fig, 'BQ14_Global_Top_Recipients.png')
+
+
+# ──────────────────────────────────────────────────────────────────
+# BQ15: Equity Compliance Tiers
+# ──────────────────────────────────────────────────────────────────
+def bq15_equity_compliance_tiers(vendor_df: pd.DataFrame):
+    """Breakdown of SDO commitment into tiers (High/Med/Low/None)."""
+    print("\n" + "="*70)
+    print("BQ15: Equity Compliance Tiers")
+    print("="*70)
+
+    df = vendor_df.copy()
+    
+    def classify_sdo(pct):
+        if pd.isna(pct) or pct == 0: return 'No Commitment (0%)'
+        if pct < 0.01: return '< 1% (Low)'
+        if pct < 0.05: return '1-5% (Standard)'
+        return '> 5% (High)'
+
+    df['SDO_Tier'] = df['SDO_Commitment_Pct'].apply(classify_sdo)
+    
+    # Contrast interesting categories (Top 5 by volume)
+    top_cats = df['Category'].value_counts().head(5).index
+    subset = df[df['Category'].isin(top_cats)]
+    
+    pivot = subset.groupby(['Category', 'SDO_Tier']).size().unstack(fill_value=0)
+    
+    # Normalize to 100%
+    pivot_pct = pivot.div(pivot.sum(axis=1), axis=0) * 100
+    
+    print("\n  Equity Tier Breakdown (Top 5 Categories):")
+    print(pivot_pct.to_string(float_format='{:.1f}%'.format))
+
+    # Plot
+    fig, ax = plt.subplots(figsize=(12, 8))
+    
+    tier_order = ['No Commitment (0%)', '< 1% (Low)', '1-5% (Standard)', '> 5% (High)']
+    # Ensure cols exist
+    existing_cols = [c for c in tier_order if c in pivot_pct.columns]
+    plot_data = pivot_pct[existing_cols]
+    
+    colors = ['#E0E0E0', '#FFCC80', '#4DB6AC', '#00838F'] # Gray -> Orange -> Teal -> Dark Teal
+    
+    plot_data.plot(kind='bar', stacked=True, ax=ax, color=colors[:len(existing_cols)], 
+                   edgecolor='white', width=0.7)
+    
+    # Wrap x labels
+    ax.set_xticklabels(wrap_labels(plot_data.index, 15), rotation=0)
+    ax.set_ylabel('Percentage of Vendors (%)', fontweight='bold')
+    ax.set_xlabel('')
+    ax.set_title('BQ15: Equity Compliance Levels (SDO Tiers)', pad=15)
+    ax.legend(title='Commitment Level', bbox_to_anchor=(1.02, 1), loc='upper left')
+    ax.yaxis.set_major_formatter(mticker.PercentFormatter())
+
+    fig.tight_layout()
+    save_plot(fig, 'BQ15_Equity_Compliance_Tiers.png')
+
+# ──────────────────────────────────────────────────────────────────
+# BQ11: National vs Local SDO Performance
+# ──────────────────────────────────────────────────────────────────
+def bq11_national_local_sdo_performance(vendor_df: pd.DataFrame, cat_df: pd.DataFrame):
+    """Do National ('USA') companies commit to higher SDO percentages than Local companies?"""
+    print("\n" + "="*70)
+    print("BQ11: National (USA) vs Local SDO Performance")
+    print("="*70)
+
+    # 1. Prepare Vendor Data
+    sdo_df = vendor_df.dropna(subset=['SDO_Commitment_Pct']).copy()
+    sdo_df = sdo_df[sdo_df['SDO_Commitment_Pct'] > 0]
+    sdo_df['SDO_Capped'] = sdo_df['SDO_Commitment_Pct'].clip(upper=1.0)
+    
+    # Normalize company names for merging (simple lowercase strip)
+    sdo_df['Company_Key'] = sdo_df['Company'].str.lower().str.strip()
+    cat_df['Company_Key'] = cat_df['Company'].str.lower().str.strip()
+
+    # 2. Merge with Categorized Data to get Type
+    # We drop duplicates in cat_df to avoid fan-out if a company is listed in multiple industries
+    unique_cats = cat_df.drop_duplicates(subset=['Company_Key'])[['Company_Key', 'Type']]
+    merged = sdo_df.merge(unique_cats, on='Company_Key', how='inner')
+
+    print(f"\n  Matches found: {len(merged)} contracts linked to categorization data")
+    
+    # 3. Analyze
+    stats = merged.groupby('Type')['SDO_Capped'].agg(['mean', 'median', 'count']).reset_index()
+    stats = stats.sort_values('mean', ascending=False)
+    
+    print("\n  SDO Performance by Company Origin:")
+    print(stats.to_string(formatters={'mean': '{:.2%}'.format, 'median': '{:.2%}'.format}))
+
+    # 4. Plot
+    fig, ax = plt.subplots(figsize=(10, 7))
+    
+    colors = {'National & Local': '#00BCD4', 'Local': '#7C4DFF', 'SGC Target': '#FF6F61'}
+    palette = [colors.get(t, '#999') for t in stats['Type']]
+    
+    bars = ax.bar(stats['Type'], stats['mean'] * 100, color=palette, edgecolor='white')
+    
+    # Add values
+    for bar, val, count in zip(bars, stats['mean'], stats['count']):
+        ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.5,
+                f"{val:.1%}\n(n={count})", ha='center', va='bottom', fontweight='bold', fontsize=10)
+
+    ax.set_ylabel('Average SDO Commitment (%)', fontweight='bold')
+    ax.set_title('BQ11: SDO Commitment by Company Origin\n(National/USA vs Local)', pad=15)
+    ax.yaxis.set_major_formatter(mticker.PercentFormatter())
+    
+    # Add context text
+    ax.text(0.95, 0.95, "National = USA-wide presence", transform=ax.transAxes, 
+            ha='right', va='top', fontsize=9, fontstyle='italic', bbox=dict(facecolor='white', alpha=0.8, edgecolor='#ccc'))
+
+    fig.tight_layout()
+    save_plot(fig, 'BQ11_National_Local_SDO_Performance.png')
+
+
+# ──────────────────────────────────────────────────────────────────
+# BQ12: National Vendor Dominance by Category
+# ──────────────────────────────────────────────────────────────────
+def bq12_national_dominance_by_category(vendor_df: pd.DataFrame, cat_df: pd.DataFrame):
+    """Which categories rely most on National ('USA') vendors?"""
+    print("\n" + "="*70)
+    print("BQ12: National Vendor Dominance by Category")
+    print("="*70)
+
+    # 1. Merge all vendors (not just SDO ones)
+    v_df = vendor_df[['Company', 'Category']].drop_duplicates()
+    v_df['Company_Key'] = v_df['Company'].str.lower().str.strip()
+    cat_df['Company_Key'] = cat_df['Company'].str.lower().str.strip()
+    
+    unique_cats = cat_df.drop_duplicates(subset=['Company_Key'])[['Company_Key', 'Type']]
+    merged = v_df.merge(unique_cats, on='Company_Key', how='inner')
+
+    print(f"  Matches found: {len(merged)} vendor-category links")
+
+    # 2. Calculate Composition
+    if merged.empty:
+        print("  ⚠️ No matches found between Vendor Data and Categorized Companies. Skipping BQ12 plot.")
+        return
+
+    composition = merged.groupby(['Category', 'Type']).size().unstack(fill_value=0)
+    composition['Total'] = composition.sum(axis=1)
+    composition['National_Pct'] = composition.get('National & Local', 0) / composition['Total']
+    
+    # Filter for categories with decent sample size
+    # composition = composition[composition['Total'] >= 5].sort_values('National_Pct', ascending=True)
+    composition = composition.sort_values('National_Pct', ascending=True)
+    composition['Label'] = composition.index.map(get_category_label)
+    
+    print("\n  Top Categories by National Vendor %:")
+    if not composition.empty:
+        print(composition[['Label', 'National_Pct', 'Total']].tail().to_string())
+    else:
+        print("  (No categories found)")
+        return
+
+    # 3. Plot: 100% Stacked Bar
+    fig, ax = plt.subplots(figsize=(12, 8))
+    
+    # Normalize for 100% stack
+    plot_data = composition.drop(columns=['Total', 'National_Pct', 'Label'])
+    if plot_data.empty:
+        print("  ⚠️ Plot data is empty. Skipping.")
+        return
+        
+    plot_data = plot_data.div(plot_data.sum(axis=1), axis=0) * 100
+    
+    # Reorder columns for visual logic
+    cols = ['Local', 'SGC Target', 'National & Local']
+    cols = [c for c in cols if c in plot_data.columns]
+    plot_data = plot_data[cols]
+    
+    if plot_data.empty:
+         print("  ⚠️ Plot data has no valid columns. Skipping.")
+         return
+
+    plot_data.plot(kind='barh', stacked=True, ax=ax, 
+                  color=['#7C4DFF', '#FF6F61', '#00BCD4'][:len(cols)], edgecolor='white')
+
+    ax.set_yticklabels(composition['Label'], fontsize=9)
+    ax.set_xlabel('Percentage of Vendors (%)', fontweight='bold')
+    ax.set_ylabel('')
+    ax.set_title('BQ12: Vendor Composition by Category\n(National Dominance vs Local Strength)', pad=15)
+    ax.xaxis.set_major_formatter(mticker.PercentFormatter())
+    ax.legend(title='Company Origin', bbox_to_anchor=(1.0, 1.0))
+    
+    # Annotate National portion
+    for i, (idx, row) in enumerate(composition.iterrows()):
+        nat_pct = row['National_Pct']
+        if nat_pct > 0.05:
+            ax.text(99, i, f"{nat_pct:.0%}", va='center', ha='right', color='white', fontweight='bold')
+
+    fig.tight_layout()
+    save_plot(fig, 'BQ12_National_Vendor_Dominance.png')
     print(f"✅ EDA Complete! All plots saved to: {OUTPUT_DIR.resolve()}")
     print("="*70)
 

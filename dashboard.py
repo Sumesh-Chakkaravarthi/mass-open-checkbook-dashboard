@@ -586,4 +586,4 @@ def update_bq1(it_filter):
 # ──────────────────────────────────────────────────────────────────
 if __name__ == '__main__':
     print("🚀 Starting dashboard at http://127.0.0.1:8050")
-    app.run(debug=True, port=8050)
+    app.run(debug=False, port=8050)

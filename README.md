@@ -2,30 +2,39 @@
 
 [![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://www.python.org/)
 [![Dash](https://img.shields.io/badge/Dash-Plotly-informational.svg)](https://dash.plotly.com/)
-[![Pandas](https://img.shields.io/badge/Pandas-Data_Analysis-red.svg)](https://pandas.pydata.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Pandas & Scikit-Learn](https://img.shields.io/badge/Stack-Pandas_%7C_Scikit--Learn-red.svg)](https://scikit-learn.org/)
+[![Dockerized / CI](https://github.com/Sumesh-Chakkaravarthi/mass-open-checkbook-dashboard/actions/workflows/ci.yml/badge.svg)](https://github.com/Sumesh-Chakkaravarthi/mass-open-checkbook-dashboard/actions)
 
 **[🔴 LIVE DEMO: Click Here](https://sumesh-chakkaravarthi.github.io/mass-open-checkbook-dashboard/)**
 
-A comprehensive, self-contained data project exploring the **Massachusetts Open Checkbook** vendor contract data. This repository features an end-to-end data pipeline from Exploratory Data Analysis (EDA) to a dynamic, interactive dashboard built with Plotly Dash.
+An advanced, full-stack data science project exploring the **Massachusetts Open Checkbook** vendor contract data. This repository features an end-to-end data pipeline from Exploratory Data Analysis (EDA) and Predictive Machine Learning to a dynamic, interactive dashboard built with Plotly Dash.
 
 ![Dashboard Overview](presentation_visuals/Figure5_Dashboard.jpg)
 
 ---
 
 ## 📖 Context & Background
-The **Supplier Diversity Office (SDO)** of Massachusetts promotes diversity, equity, and inclusion in state contracting. This project analyzes vendor contracts across the IT Sector, identifying disparities in SDO commitment and exploring geographical distribution. 
+The **Supplier Diversity Office (SDO)** of Massachusetts promotes diversity, equity, and inclusion in state contracting. This project analyzes vendor contracts across the IT Sector, identifying disparities in SDO commitment.
 
-### Key Business Questions Analyzed:
-- What is the vendor concentration in the IT sector?
-- How do National vs. Local SDO performances compare?
-- Are certain contract subcategories dominated by specific vendors?
-- How is the structural density of SDO companies distributed?
+### Key Advanced Features:
+- **Predictive Machine Learning**: A sophisticated Random Forest Regressor trained to predict a vendor's SDO commitment likelihood based on categorical footprint features.
+- **Automated CI/CD**: Fully integrated GitHub Actions pipeline for automated testing and dependency validation.
+- **Interactive Dashboards**: Deep-dive analytics via a multi-page Dash web application.
+
+---
+
+## 🤖 Machine Learning Pipeline
+The `train_sdo_model.py` script acts as the core ML engine. It preprocesses raw categorical vendor variables using `OneHotEncoder`, establishes a `ColumnTransformer` baseline, and trains a highly optimized `RandomForestRegressor`.
+
+### Model Diagnostics & Feature Importance
+The Random Forest model effectively identifies which vendor characteristics (e.g., industry role, contract category) carry the highest predictive weight in terms of Supplier Diversity metrics.
+![Feature Importance](output/ML_Feature_Importance.png)
+
+---
 
 ## 📂 Dataset
 - **Source**: Massachusetts Open Checkbook Public Data
-- **Focus Area**: IT Sector, Cross-Category Analysis, and Vendor Coverage.
-- Data files are processed via `eda_analysis.py` to generate the interactive visualizations and analytical models.
+- Data files are processed via `eda_analysis.py` for visualization and `train_sdo_model.py` for predictive modeling.
 
 ## 📈 Key Findings & Visualizations
 

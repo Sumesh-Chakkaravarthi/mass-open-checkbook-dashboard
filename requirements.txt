@@ -6,3 +6,5 @@ plotly
 dash
 numpy
 scipy
+scikit-learn
+joblib

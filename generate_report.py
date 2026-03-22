@@ -122,7 +122,7 @@ def generate_sector_analysis(cat_df):
     path = OUTPUT_DIR / 'BQ11_Sector_Company_Density.png'
     fig.savefig(path, dpi=200, bbox_inches='tight', facecolor=fig.get_facecolor())
     plt.close(fig)
-    print(f"   📊 Saved: {path.name}")
+    print(f"   Saved: {path.name}")
     return path
 
 
@@ -405,7 +405,7 @@ def create_report(vendor_df, cat_df):
     # Save
     output_path = Path('ALY6980_EDA_Report.docx')
     doc.save(str(output_path))
-    print(f"\n✅ Report saved: {output_path.resolve()}")
+    print(f"\nReport saved: {output_path.resolve()}")
     return output_path
 
 
@@ -414,7 +414,7 @@ if __name__ == '__main__':
     print("Loading data...")
     vendor_df = load_vendor_data(VENDOR_FILE)
     cat_df = load_categorized_companies(CATEGORIZED_FILE)
-    print(f"✅ {len(vendor_df):,} vendors, {len(cat_df):,} categorized companies")
+    print(f"Loaded {len(vendor_df):,} vendors, {len(cat_df):,} categorized companies")
 
     # Generate BQ11 plot
     print("\nGenerating BQ11: Sector Analysis...")

@@ -64,22 +64,27 @@ CATEGORY_NAMES = {
 # Sheets to skip (non-data)
 SKIP_SHEETS = ['Abbreviations ']
 
-# Color palette — modern and cohesive
-PALETTE_MAIN = '#1B2838'       # Dark navy background feel
-PALETTE_ACCENT = '#00BCD4'     # Cyan accent
-PALETTE_ACCENT2 = '#FF6F61'    # Coral accent
-PALETTE_ACCENT3 = '#7C4DFF'    # Purple accent
-PALETTE_CAT = sns.color_palette("husl", 15)
-PALETTE_IT = ['#00BCD4', '#7C4DFF', '#FF6F61']
+# Color palette — professional enterprise palette
+PALETTE_MAIN = '#1E40AF'
+PALETTE_ACCENT = '#1E40AF'
+PALETTE_ACCENT2 = '#DC2626'
+PALETTE_ACCENT3 = '#7C3AED'
+PALETTE_CAT = ['#1E40AF', '#7C3AED', '#DC2626', '#059669', '#D97706',
+               '#0891B2', '#BE185D', '#4338CA', '#15803D', '#B45309',
+               '#1D4ED8', '#9333EA', '#E11D48', '#047857', '#CA8A04']
+PALETTE_IT = ['#1E40AF', '#7C3AED', '#DC2626']
 
-# Plot styling
+# Plot styling — clean white professional
 plt.rcParams.update({
-    'figure.facecolor': '#FAFAFA',
-    'axes.facecolor': '#FAFAFA',
-    'axes.edgecolor': '#CCCCCC',
-    'axes.labelcolor': '#333333',
-    'xtick.color': '#555555',
-    'ytick.color': '#555555',
+    'figure.facecolor': '#FFFFFF',
+    'axes.facecolor': '#FFFFFF',
+    'axes.edgecolor': '#CBD5E1',
+    'axes.labelcolor': '#1E293B',
+    'xtick.color': '#64748B',
+    'ytick.color': '#64748B',
+    'axes.grid': True,
+    'grid.color': '#F1F5F9',
+    'grid.linewidth': 0.8,
     'font.family': 'sans-serif',
     'font.size': 11,
     'axes.titlesize': 14,
@@ -133,7 +138,7 @@ def load_vendor_data(filepath: str) -> pd.DataFrame:
         frames.append(df)
 
     combined = pd.concat(frames, ignore_index=True)
-    print(f"✅ Loaded vendor data: {len(combined):,} vendor records across {combined['Category'].nunique()} categories")
+    print(f"Loaded vendor data: {len(combined):,} vendor records across {combined['Category'].nunique()} categories")
     return combined
 
 
@@ -166,7 +171,7 @@ def load_categorized_companies(filepath: str) -> pd.DataFrame:
                 frames.append({'Industry': industry, 'Company': company, 'Type': 'SGC Target'})
 
     combined = pd.DataFrame(frames)
-    print(f"✅ Loaded categorized companies: {len(combined):,} entries across {combined['Industry'].nunique()} industries")
+    print(f"Loaded categorized companies: {len(combined):,} entries across {combined['Industry'].nunique()} industries")
     return combined
 
 
@@ -177,7 +182,7 @@ def save_plot(fig, filename: str):
     """Save figure with high quality."""
     fig.savefig(OUTPUT_DIR / filename, dpi=200, bbox_inches='tight', facecolor=fig.get_facecolor())
     plt.close(fig)
-    print(f"   📊 Saved: {filename}")
+    print(f"   Saved: {filename}")
 
 
 def get_category_label(code: str) -> str:
@@ -919,7 +924,7 @@ def bq12_national_dominance_by_category(vendor_df: pd.DataFrame, cat_df: pd.Data
 
     # 2. Calculate Composition
     if merged.empty:
-        print("  ⚠️ No matches found between Vendor Data and Categorized Companies. Skipping BQ12 plot.")
+        print("  Warning: No matches found between Vendor Data and Categorized Companies. Skipping BQ12 plot.")
         return
 
     composition = merged.groupby(['Category', 'Type']).size().unstack(fill_value=0)
@@ -944,7 +949,7 @@ def bq12_national_dominance_by_category(vendor_df: pd.DataFrame, cat_df: pd.Data
     # Normalize for 100% stack
     plot_data = composition.drop(columns=['Total', 'National_Pct', 'Label'])
     if plot_data.empty:
-        print("  ⚠️ Plot data is empty. Skipping.")
+        print("  Warning: Plot data is empty. Skipping.")
         return
         
     plot_data = plot_data.div(plot_data.sum(axis=1), axis=0) * 100
@@ -955,7 +960,7 @@ def bq12_national_dominance_by_category(vendor_df: pd.DataFrame, cat_df: pd.Data
     plot_data = plot_data[cols]
     
     if plot_data.empty:
-         print("  ⚠️ Plot data has no valid columns. Skipping.")
+         print("  Warning: Plot data has no valid columns. Skipping.")
          return
 
     plot_data.plot(kind='barh', stacked=True, ax=ax, 
@@ -976,7 +981,7 @@ def bq12_national_dominance_by_category(vendor_df: pd.DataFrame, cat_df: pd.Data
 
     fig.tight_layout()
     save_plot(fig, 'BQ12_National_Vendor_Dominance.png')
-    print(f"✅ EDA Complete! All plots saved to: {OUTPUT_DIR.resolve()}")
+    print(f"EDA complete. All plots saved to: {OUTPUT_DIR.resolve()}")
     print("="*70)
 
 

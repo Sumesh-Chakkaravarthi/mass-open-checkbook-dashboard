@@ -148,12 +148,12 @@ def train_and_evaluate(df: pd.DataFrame):
     # Save Model
     model_path = MODEL_DIR / 'sdo_rf_model.pkl'
     joblib.dump(model, model_path)
-    print(f"✅ Model saved to {model_path}")
+    print(f"Model saved to {model_path}")
 
 def plot_feature_importance(df: pd.DataFrame):
     fig, ax = plt.subplots(figsize=(10, 6))
     
-    sns.barplot(x='Importance', y='Feature', data=df, palette='viridis', ax=ax)
+    sns.barplot(x='Importance', y='Feature', data=df, palette='Blues_r', ax=ax)
     
     ax.set_title('Machine Learning: Top 15 Features Predicting SDO Commitment', pad=15, fontweight='bold')
     ax.set_xlabel('Relative Feature Importance', fontweight='bold')
@@ -165,7 +165,7 @@ def plot_feature_importance(df: pd.DataFrame):
     fig.tight_layout()
     output_path = OUTPUT_DIR / 'ML_Feature_Importance.png'
     fig.savefig(output_path, dpi=200)
-    print(f"✅ Feature Importance plot saved to {output_path}")
+    print(f"Feature importance plot saved to {output_path}")
 
 # ──────────────────────────────────────────────────────────────────
 # Execution

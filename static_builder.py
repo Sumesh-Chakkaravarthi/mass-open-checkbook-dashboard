@@ -3,9 +3,9 @@ import plotly.io as pio
 import textwrap
 
 # Set default template to match dashboard
-pio.templates.default = "plotly_dark"
+pio.templates.default = "plotly_white"
 
-print("🚀 Starting Static Dashboard Build...")
+print("Starting Static Dashboard Build...")
 
 # ──────────────────────────────────────────────────────────────────
 # HTML Template
@@ -22,80 +22,77 @@ HTML_TEMPLATE = """
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            background-color: #0F172A;
-            color: #F1F5F9;
+            background-color: #F8FAFC;
+            color: #1E293B;
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             padding-bottom: 40px;
         }
-        
+
         /* Layout */
         .container { max-width: 1400px; margin: 0 auto; }
-        
+
         /* Header */
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px 32px;
-            border-bottom: 1px solid #334155;
-            background: #0F172A;
+            padding: 24px 32px 16px 32px;
+            border-bottom: 1px solid #E2E8F0;
+            background: #FFFFFF;
         }
         h1 {
-            font-size: 28px;
+            font-size: 24px;
             font-weight: 700;
-            background: linear-gradient(135deg, #06B6D4, #8B5CF6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #1E293B;
         }
-        .subtitle { color: #94A3B8; font-size: 14px; margin-top: 4px; }
-        .badge {
-            background: #1E293B; color: #06B6D4;
-            padding: 8px 16px; border-radius: 20px; font-size: 12px;
-            border: 1px solid #334155; font-weight: 600;
-        }
+        .subtitle { color: #64748B; font-size: 14px; margin-top: 4px; }
 
         /* KPI Cards */
         .kpi-row {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 16px;
-            padding: 24px 32px;
+            padding: 20px 32px;
+            background: #FFFFFF;
         }
         .kpi-card {
-            background: #1E293B;
-            border-radius: 12px;
-            padding: 24px;
-            border: 1px solid #334155;
+            background: #FFFFFF;
+            border-radius: 8px;
+            padding: 20px 24px;
+            border: 1px solid #E2E8F0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
             text-align: center;
         }
-        .kpi-title { color: #94A3B8; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; font-weight: 500; margin-bottom: 8px; }
-        .kpi-value { font-size: 32px; font-weight: 700; margin-bottom: 4px; }
-        .kpi-sub { color: #94A3B8; font-size: 12px; }
+        .kpi-title { color: #64748B; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600; margin-bottom: 8px; }
+        .kpi-value { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+        .kpi-sub { color: #64748B; font-size: 12px; }
 
         /* Tabs */
         .tabs {
             display: flex;
             padding: 0 32px;
-            border-bottom: 1px solid #334155;
+            border-bottom: 1px solid #E2E8F0;
             margin-bottom: 24px;
+            background: #FFFFFF;
         }
         .tab-btn {
             background: transparent;
-            color: #94A3B8;
+            color: #64748B;
             border: none;
-            padding: 16px 24px;
-            font-size: 14px;
+            padding: 12px 24px;
+            font-size: 13px;
             font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
             cursor: pointer;
             transition: all 0.2s;
-            border-bottom: 3px solid transparent;
+            border-bottom: 2px solid transparent;
+            font-family: 'Inter', system-ui, sans-serif;
         }
-        .tab-btn:hover { color: #F1F5F9; }
+        .tab-btn:hover { color: #1E293B; }
         .tab-btn.active {
-            color: #06B6D4;
-            border-bottom: 3px solid #06B6D4;
+            color: #1E40AF;
+            border-bottom: 2px solid #1E40AF;
+            font-weight: 600;
         }
 
         /* Tab Content */
@@ -105,7 +102,7 @@ HTML_TEMPLATE = """
             animation: fadeIn 0.3s ease-in-out;
         }
         .tab-content.active { display: block; }
-        
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -117,12 +114,13 @@ HTML_TEMPLATE = """
             gap: 20px;
             margin-bottom: 20px;
         }
-        .chart-col { flex: 1; min-width: 0; } /* min-width 0 fixes flex overflow */
+        .chart-col { flex: 1; min-width: 0; }
         .chart-card {
-            background: #1E293B;
-            border-radius: 12px;
+            background: #FFFFFF;
+            border-radius: 8px;
             padding: 16px;
-            border: 1px solid #334155;
+            border: 1px solid #E2E8F0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
             height: 100%;
         }
 
@@ -133,24 +131,26 @@ HTML_TEMPLATE = """
             margin-bottom: 20px;
             margin-top: 10px;
         }
-        label { color: #94A3B8; font-size: 13px; font-weight: 500; margin-right: 12px; }
+        label { color: #64748B; font-size: 13px; font-weight: 500; margin-right: 12px; }
         select {
-            background: #1E293B;
-            color: #F1F5F9;
-            border: 1px solid #334155;
+            background: #FFFFFF;
+            color: #1E293B;
+            border: 1px solid #E2E8F0;
             padding: 8px 12px;
-            border-radius: 8px;
+            border-radius: 6px;
             font-size: 14px;
             width: 300px;
             outline: none;
+            font-family: 'Inter', system-ui, sans-serif;
         }
+        select:focus { border-color: #1E40AF; }
 
         /* Footer */
         footer {
             margin-top: 40px;
-            padding: 24px;
+            padding: 20px 24px;
             text-align: center;
-            border-top: 1px solid #334155;
+            border-top: 1px solid #E2E8F0;
             color: #94A3B8;
             font-size: 12px;
         }
@@ -162,10 +162,7 @@ HTML_TEMPLATE = """
     <header>
         <div>
             <h1>Massachusetts Open Checkbook</h1>
-            <div class="subtitle">Vendor Contract & SDO Commitment Analysis Dashboard</div>
-        </div>
-        <div>
-            <span class="badge">ALY 6980 Capstone</span>
+            <div class="subtitle">Vendor Contract & SDO Commitment Analysis</div>
         </div>
     </header>
 
@@ -176,10 +173,10 @@ HTML_TEMPLATE = """
 
     <!-- Navigation -->
     <div class="tabs">
-        <button class="tab-btn active" onclick="openTab(event, 'tab-1')">🖥️ IT Sector SDO</button>
-        <button class="tab-btn" onclick="openTab(event, 'tab-2')">📊 Cross-Category</button>
-        <button class="tab-btn" onclick="openTab(event, 'tab-3')">✅ Vendor Coverage</button>
-        <button class="tab-btn" onclick="openTab(event, 'tab-4')">🏢 Industry Analysis</button>
+        <button class="tab-btn active" onclick="openTab(event, 'tab-1')">IT Sector SDO</button>
+        <button class="tab-btn" onclick="openTab(event, 'tab-2')">Cross-Category</button>
+        <button class="tab-btn" onclick="openTab(event, 'tab-3')">Vendor Coverage</button>
+        <button class="tab-btn" onclick="openTab(event, 'tab-4')">Industry Analysis</button>
     </div>
 
     <!-- Tab 1: IT Sector -->
@@ -245,7 +242,7 @@ HTML_TEMPLATE = """
     </div>
 
     <footer>
-        <p>ALY 6980 Capstone Project • Sumesh Chakkaravarthi • February 2026</p>
+        <p>Sumesh Chakkaravarthi | Massachusetts Open Checkbook Analysis</p>
     </footer>
 </div>
 
@@ -289,11 +286,11 @@ HTML_TEMPLATE = """
 
 def generate_kpi_html():
     kpis = [
-        ("Total Vendors", f"{dashboard.total_vendors:,}", "Unique companies", dashboard.COLORS['accent']),
-        ("Average SDO", f"{dashboard.avg_sdo:.1%}", "Commitment percentage", dashboard.COLORS['accent2']),
-        ("Categories", str(dashboard.categories_count), "Procurement categories", dashboard.COLORS['accent3']),
-        ("IT Vendors", f"{dashboard.it_vendors:,}", "ITE + ITS + ITT", dashboard.COLORS['accent4']),
-        ("Industries", str(dashboard.industries_count), "Company classifications", '#F59E0B'),
+        ("Total Vendors", f"{dashboard.total_vendors:,}", "Unique companies", '#1E40AF'),
+        ("Average SDO", f"{dashboard.avg_sdo:.1%}", "Commitment percentage", '#7C3AED'),
+        ("Categories", str(dashboard.categories_count), "Procurement categories", '#DC2626'),
+        ("IT Vendors", f"{dashboard.it_vendors:,}", "ITE + ITS + ITT", '#059669'),
+        ("Industries", str(dashboard.industries_count), "Company classifications", '#D97706'),
     ]
     html_parts = []
     for title, val, sub, color in kpis:
@@ -364,4 +361,4 @@ final_html = final_html.replace("{bq9}", bq9)
 with open("index.html", "w") as f:
     f.write(final_html)
 
-print("✅ Success! Generated 'index.html'. Open this file in your browser to test.")
+print("Done. Generated 'index.html'.")

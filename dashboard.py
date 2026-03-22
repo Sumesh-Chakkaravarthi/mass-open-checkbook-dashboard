@@ -48,21 +48,25 @@ CATEGORY_NAMES = {
 
 SKIP_SHEETS = ['Abbreviations ']
 
-# Color scheme
+# Color scheme — clean professional light theme
 COLORS = {
-    'bg': '#0F172A',
-    'card': '#1E293B',
-    'card_border': '#334155',
-    'accent': '#06B6D4',
-    'accent2': '#8B5CF6',
-    'accent3': '#F43F5E',
-    'accent4': '#10B981',
-    'text': '#F1F5F9',
-    'text_muted': '#94A3B8',
-    'grid': '#334155',
+    'bg': '#FFFFFF',
+    'card': '#FFFFFF',
+    'card_border': '#E2E8F0',
+    'accent': '#1E40AF',
+    'accent2': '#7C3AED',
+    'accent3': '#DC2626',
+    'accent4': '#059669',
+    'text': '#1E293B',
+    'text_muted': '#64748B',
+    'grid': '#F1F5F9',
 }
 
-CHART_TEMPLATE = 'plotly_dark'
+# Professional chart palette
+CHART_COLORS = ['#1E40AF', '#7C3AED', '#DC2626', '#059669', '#D97706',
+                '#0891B2', '#BE185D', '#4338CA', '#15803D', '#B45309']
+
+CHART_TEMPLATE = 'plotly_white'
 
 # ──────────────────────────────────────────────────────────────────
 # Data Loading (same as EDA, but streamlined)
@@ -114,7 +118,7 @@ def load_categorized_companies(filepath):
 print("Loading data...")
 vendor_df = load_vendor_data(VENDOR_FILE)
 cat_df = load_categorized_companies(CATEGORIZED_FILE)
-print(f"✅ {len(vendor_df):,} vendor records, {len(cat_df):,} categorized companies")
+print(f"Loaded {len(vendor_df):,} vendor records, {len(cat_df):,} categorized companies")
 
 # Pre-compute common derived datasets
 vendor_with_sdo = vendor_df.dropna(subset=['SDO_Pct']).copy()
@@ -129,20 +133,21 @@ def kpi_card(title, value, subtitle="", color=COLORS['accent']):
     return html.Div(
         children=[
             html.H4(title, style={'color': COLORS['text_muted'], 'margin': '0 0 8px 0',
-                                   'fontSize': '13px', 'textTransform': 'uppercase',
-                                   'letterSpacing': '1px', 'fontWeight': '500'}),
+                                   'fontSize': '11px', 'textTransform': 'uppercase',
+                                   'letterSpacing': '1.5px', 'fontWeight': '600'}),
             html.H2(value, style={'color': color, 'margin': '0 0 4px 0',
-                                   'fontSize': '32px', 'fontWeight': '700'}),
+                                   'fontSize': '28px', 'fontWeight': '700'}),
             html.P(subtitle, style={'color': COLORS['text_muted'], 'margin': '0',
                                      'fontSize': '12px'}),
         ],
         style={
             'background': COLORS['card'],
-            'borderRadius': '12px',
-            'padding': '24px',
+            'borderRadius': '8px',
+            'padding': '20px 24px',
             'border': f"1px solid {COLORS['card_border']}",
+            'boxShadow': '0 1px 3px rgba(0,0,0,0.06)',
             'flex': '1',
-            'minWidth': '200px',
+            'minWidth': '180px',
             'textAlign': 'center',
         }
     )
@@ -154,16 +159,17 @@ def kpi_card(title, value, subtitle="", color=COLORS['accent']):
 def chart_layout(fig, title="", height=500):
     fig.update_layout(
         template=CHART_TEMPLATE,
-        title=dict(text=title, font=dict(size=16, color=COLORS['text'])),
+        title=dict(text=title, font=dict(size=15, color=COLORS['text'], family='Inter, system-ui, sans-serif'),
+                   x=0.0, xanchor='left'),
         paper_bgcolor=COLORS['card'],
         plot_bgcolor=COLORS['card'],
-        font=dict(color=COLORS['text'], family='Inter, system-ui, sans-serif'),
-        margin=dict(l=60, r=30, t=60, b=60),
+        font=dict(color=COLORS['text'], family='Inter, system-ui, sans-serif', size=12),
+        margin=dict(l=60, r=30, t=50, b=50),
         height=height,
         legend=dict(bgcolor='rgba(0,0,0,0)', font=dict(size=11)),
     )
-    fig.update_xaxes(gridcolor=COLORS['grid'], zeroline=False)
-    fig.update_yaxes(gridcolor=COLORS['grid'], zeroline=False)
+    fig.update_xaxes(gridcolor=COLORS['grid'], zeroline=False, linecolor='#CBD5E1')
+    fig.update_yaxes(gridcolor=COLORS['grid'], zeroline=False, linecolor='#CBD5E1')
     return fig
 
 
@@ -180,7 +186,7 @@ def make_bq1_chart(it_filter='All'):
     ).reset_index().sort_values('SDO_Max', ascending=True).tail(15)
 
     fig = px.bar(top, y='Company', x='SDO_Max', color='Category_Label',
-                 orientation='h', color_discrete_sequence=[COLORS['accent'], COLORS['accent2'], COLORS['accent3']])
+                 orientation='h', color_discrete_sequence=CHART_COLORS[:3])
     fig.update_traces(texttemplate='%{x:.0%}', textposition='outside')
     fig.update_layout(xaxis_tickformat='.0%', xaxis_title='SDO Commitment %',
                       yaxis_title='', legend_title='')
@@ -195,7 +201,7 @@ def make_bq2_chart():
     ).reset_index().sort_values('Avg', ascending=True)
 
     fig = px.bar(stats, y='Category_Label', x='Avg', orientation='h',
-                 color='Avg', color_continuous_scale='Viridis',
+                 color='Avg', color_continuous_scale='Blues',
                  hover_data={'Count': True})
     fig.update_traces(texttemplate='%{x:.1%}', textposition='outside')
     fig.update_layout(xaxis_tickformat='.0%', xaxis_title='Average SDO %',
@@ -208,7 +214,7 @@ def make_bq3_chart():
     counts = vendor_df.groupby('Category_Label')['Company'].nunique().reset_index()
     counts.columns = ['Category', 'Vendors']
     fig = px.treemap(counts, path=['Category'], values='Vendors',
-                     color='Vendors', color_continuous_scale='Teal')
+                     color='Vendors', color_continuous_scale='Blues')
     fig.update_traces(textinfo='label+value+percent root',
                       textfont=dict(size=13))
     return chart_layout(fig, 'BQ3: Vendor Distribution Across Procurement Categories', 500)
@@ -222,7 +228,7 @@ def make_bq4_chart():
     df.columns = ['Code', 'Vendors']
 
     fig = px.bar(df, x='Code', y='Vendors', color='Vendors',
-                 color_continuous_scale='Sunset')
+                 color_continuous_scale='Blues')
     fig.update_traces(texttemplate='%{y}', textposition='outside')
     fig.update_layout(xaxis_title='Contract Code', yaxis_title='Unique Vendors')
     return chart_layout(fig, 'BQ4: Top 20 Contract Sub-Categories by Vendor Count', 450)
@@ -234,9 +240,9 @@ def make_bq5_chart():
     fig = px.bar(pivot, y='Industry', x='Count', color='Type', orientation='h',
                  barmode='group',
                  color_discrete_map={
-                     'National & Local': COLORS['accent'],
-                     'Local': COLORS['accent2'],
-                     'SGC Target': COLORS['accent3']
+                     'National & Local': '#1E40AF',
+                     'Local': '#7C3AED',
+                     'SGC Target': '#DC2626'
                  })
     fig.update_layout(yaxis_title='', xaxis_title='Number of Companies', legend_title='')
     return chart_layout(fig, 'BQ5: National vs Local Company Presence by Industry', 500)
@@ -249,7 +255,7 @@ def make_bq6_chart():
     df = vendor_with_sdo[vendor_with_sdo['Category'].isin(valid_cats)].copy()
 
     fig = px.box(df, x='Category_Label', y='SDO_Capped', color='Category_Label',
-                 color_discrete_sequence=px.colors.qualitative.Set2)
+                 color_discrete_sequence=CHART_COLORS)
     fig.update_layout(xaxis_title='', yaxis_title='SDO Commitment %',
                       yaxis_tickformat='.0%', showlegend=False)
     fig.update_xaxes(tickangle=-45)
@@ -268,7 +274,7 @@ def make_bq7_chart():
 
     fig = px.bar(melted, y='Category_Label', x='Count', color='Status', orientation='h',
                  barmode='group',
-                 color_discrete_map={'Has SDO': COLORS['accent4'], 'No SDO': COLORS['accent3']})
+                 color_discrete_map={'Has SDO': '#059669', 'No SDO': '#DC2626'})
     fig.update_layout(yaxis_title='', xaxis_title='Number of Vendors', legend_title='')
     return chart_layout(fig, 'BQ7: SDO Coverage – Vendors with Valid SDO vs Missing', 550)
 
@@ -284,7 +290,7 @@ def make_bq8_chart():
 
     fig = px.scatter(stats, x='Vendors', y='Avg_SDO', text='Category',
                      size='Vendors', color='Avg_SDO',
-                     color_continuous_scale='Viridis', size_max=40)
+                     color_continuous_scale='Blues', size_max=40)
     fig.update_traces(textposition='top center', textfont=dict(size=11, color=COLORS['text']))
     fig.update_layout(xaxis_title='Number of Unique Vendors',
                       yaxis_title='Average SDO %', yaxis_tickformat='.0%')
@@ -296,14 +302,14 @@ def make_bq8_chart():
         x_range = np.linspace(stats['Vendors'].min(), stats['Vendors'].max(), 50)
         fig.add_trace(go.Scatter(x=x_range, y=intercept + slope * x_range,
                                   mode='lines', name=f'Trend (r={r:.2f})',
-                                  line=dict(color=COLORS['accent3'], dash='dash', width=2)))
+                                  line=dict(color='#DC2626', dash='dash', width=2)))
     return chart_layout(fig, 'BQ8: Vendor Count vs Average SDO Commitment', 500)
 
 
 # ── BQ9: Industry Diversity Heatmap ──
 def make_bq9_chart():
     pivot = cat_df.groupby(['Industry', 'Type']).size().unstack(fill_value=0)
-    fig = px.imshow(pivot, text_auto=True, color_continuous_scale='YlOrRd',
+    fig = px.imshow(pivot, text_auto=True, color_continuous_scale='Blues',
                     labels=dict(x='Company Type', y='Industry', color='Count'))
     fig.update_layout(xaxis_title='', yaxis_title='')
     return chart_layout(fig, 'BQ9: Industry Diversity – National vs Local vs SGC Target', 500)
@@ -321,7 +327,7 @@ def make_bq10_chart():
 
     fig = go.Figure(go.Pie(labels=labels, values=values, hole=0.5,
                            textinfo='label+percent', textposition='outside',
-                           marker=dict(colors=px.colors.qualitative.Set3)))
+                           marker=dict(colors=CHART_COLORS + ['#CBD5E1'])))
     fig.update_layout(showlegend=False)
     return chart_layout(fig, 'BQ10: IT Sector Vendor Concentration', 500)
 
@@ -329,7 +335,7 @@ def make_bq10_chart():
 # ── Dashboard-Only: SDO Histogram ──
 def make_sdo_histogram():
     fig = px.histogram(vendor_with_sdo, x='SDO_Capped', nbins=50,
-                       color_discrete_sequence=[COLORS['accent']],
+                       color_discrete_sequence=['#1E40AF'],
                        labels={'SDO_Capped': 'SDO Commitment %'})
     fig.update_layout(xaxis_tickformat='.0%', xaxis_title='SDO Commitment %',
                       yaxis_title='Number of Vendors', bargap=0.05)
@@ -353,13 +359,13 @@ def make_it_radar():
     categories_radar = ['Avg SDO', 'Median SDO', 'Max SDO', 'Vendor Count', 'Coverage Rate']
 
     fig = go.Figure()
-    colors_radar = [COLORS['accent'], COLORS['accent2'], COLORS['accent3']]
+    colors_radar = ['#1E40AF', '#7C3AED', '#DC2626']
+    fill_colors = ['rgba(30,64,175,0.12)', 'rgba(124,58,237,0.12)', 'rgba(220,38,38,0.12)']
     for i, m in enumerate(metrics):
-        # Normalize to 0-100 scale
         vals = [m[c] for c in categories_radar]
         max_vals = [max(me[c] for me in metrics) for c in categories_radar]
         normalized = [(v / mx * 100 if mx > 0 else 0) for v, mx in zip(vals, max_vals)]
-        normalized.append(normalized[0])  # close the polygon
+        normalized.append(normalized[0])
 
         fig.add_trace(go.Scatterpolar(
             r=normalized,
@@ -367,17 +373,17 @@ def make_it_radar():
             fill='toself',
             name=m['Category'],
             line=dict(color=colors_radar[i], width=2),
-            fillcolor=colors_radar[i].replace(')', ', 0.15)').replace('rgb', 'rgba') if 'rgb' in colors_radar[i] else None,
-            opacity=0.8
+            fillcolor=fill_colors[i],
+            opacity=0.9
         ))
 
     fig.update_layout(
         polar=dict(
-            radialaxis=dict(visible=True, range=[0, 110], gridcolor=COLORS['grid'],
+            radialaxis=dict(visible=True, range=[0, 110], gridcolor='#E2E8F0',
                             tickfont=dict(size=9, color=COLORS['text_muted'])),
-            angularaxis=dict(gridcolor=COLORS['grid'],
+            angularaxis=dict(gridcolor='#E2E8F0',
                              tickfont=dict(size=11, color=COLORS['text'])),
-            bgcolor=COLORS['card'],
+            bgcolor='#FFFFFF',
         ),
         showlegend=True,
     )
@@ -402,31 +408,36 @@ app.index_string = '''
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            background: ''' + COLORS['bg'] + ''';
-            color: ''' + COLORS['text'] + ''';
+            background: #F8FAFC;
+            color: #1E293B;
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
         }
         .dash-tab {
             background: transparent !important;
-            color: ''' + COLORS['text_muted'] + ''' !important;
+            color: #64748B !important;
             border: none !important;
             padding: 12px 24px !important;
-            font-size: 14px !important;
+            font-size: 13px !important;
             font-weight: 500 !important;
-            text-transform: uppercase !important;
-            letter-spacing: 0.5px !important;
+            letter-spacing: 0.3px !important;
+            border-bottom: 2px solid transparent !important;
+        }
+        .dash-tab:hover {
+            color: #1E293B !important;
         }
         .dash-tab--selected {
-            color: ''' + COLORS['accent'] + ''' !important;
-            border-bottom: 3px solid ''' + COLORS['accent'] + ''' !important;
+            color: #1E40AF !important;
+            border-bottom: 2px solid #1E40AF !important;
+            font-weight: 600 !important;
         }
         .tab-content { padding: 24px; }
         .chart-card {
-            background: ''' + COLORS['card'] + ''';
-            border-radius: 12px;
+            background: #FFFFFF;
+            border-radius: 8px;
             padding: 16px;
             margin-bottom: 20px;
-            border: 1px solid ''' + COLORS['card_border'] + ''';
+            border: 1px solid #E2E8F0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
         }
     </style>
 </head>
@@ -454,23 +465,16 @@ app.layout = html.Div([
     html.Div([
         html.Div([
             html.H1("Massachusetts Open Checkbook", style={
-                'fontSize': '28px', 'fontWeight': '700', 'margin': '0',
-                'background': f'linear-gradient(135deg, {COLORS["accent"]}, {COLORS["accent2"]})',
-                '-webkit-background-clip': 'text', '-webkit-text-fill-color': 'transparent',
+                'fontSize': '24px', 'fontWeight': '700', 'margin': '0',
+                'color': '#1E293B',
             }),
-            html.P("Vendor Contract & SDO Commitment Analysis Dashboard",
-                    style={'color': COLORS['text_muted'], 'fontSize': '14px', 'margin': '4px 0 0 0'}),
+            html.P("Vendor Contract & SDO Commitment Analysis",
+                    style={'color': '#64748B', 'fontSize': '14px', 'margin': '4px 0 0 0'}),
         ], style={'flex': '1'}),
-        html.Div([
-            html.Span("ALY 6980 Capstone", style={
-                'background': COLORS['card'], 'color': COLORS['accent'],
-                'padding': '8px 16px', 'borderRadius': '20px', 'fontSize': '12px',
-                'border': f'1px solid {COLORS["card_border"]}', 'fontWeight': '600',
-            }),
-        ]),
     ], style={
         'display': 'flex', 'justifyContent': 'space-between', 'alignItems': 'center',
-        'padding': '20px 32px', 'borderBottom': f'1px solid {COLORS["card_border"]}',
+        'padding': '24px 32px 16px 32px', 'borderBottom': '1px solid #E2E8F0',
+        'background': '#FFFFFF',
     }),
 
     # KPI Row
@@ -481,26 +485,27 @@ app.layout = html.Div([
         kpi_card("IT Vendors", f"{it_vendors:,}", "ITE + ITS + ITT", COLORS['accent4']),
         kpi_card("Industries", str(industries_count), "Company classifications", '#F59E0B'),
     ], style={
-        'display': 'flex', 'gap': '16px', 'padding': '24px 32px',
-        'overflowX': 'auto',
+        'display': 'flex', 'gap': '16px', 'padding': '20px 32px',
+        'overflowX': 'auto', 'background': '#FFFFFF',
     }),
 
     # Tabs
     dcc.Tabs(id='main-tabs', value='tab-1', children=[
-        dcc.Tab(label='🖥️ IT Sector SDO', value='tab-1'),
-        dcc.Tab(label='📊 Cross-Category', value='tab-2'),
-        dcc.Tab(label='✅ Vendor Coverage', value='tab-3'),
-        dcc.Tab(label='🏢 Industry Analysis', value='tab-4'),
-    ], style={'padding': '0 32px'}),
+        dcc.Tab(label='IT Sector SDO', value='tab-1'),
+        dcc.Tab(label='Cross-Category', value='tab-2'),
+        dcc.Tab(label='Vendor Coverage', value='tab-3'),
+        dcc.Tab(label='Industry Analysis', value='tab-4'),
+    ], style={'padding': '0 32px', 'background': '#FFFFFF',
+              'borderBottom': '1px solid #E2E8F0'}),
 
     # Tab content
     html.Div(id='tab-content', style={'padding': '0 32px 32px 32px'}),
 
     # Footer
     html.Div([
-        html.P("ALY 6980 Capstone Project • Sumesh Chakkaravarthi • February 2026",
-               style={'color': COLORS['text_muted'], 'fontSize': '12px', 'textAlign': 'center'}),
-    ], style={'padding': '16px', 'borderTop': f'1px solid {COLORS["card_border"]}'}),
+        html.P("Sumesh Chakkaravarthi | Massachusetts Open Checkbook Analysis",
+               style={'color': '#94A3B8', 'fontSize': '12px', 'textAlign': 'center'}),
+    ], style={'padding': '20px 16px', 'borderTop': '1px solid #E2E8F0', 'marginTop': '16px'}),
 ], style={'maxWidth': '1400px', 'margin': '0 auto'})
 
 
@@ -525,8 +530,8 @@ def render_tab(tab):
                     ],
                     value='All',
                     clearable=False,
-                    style={'width': '300px', 'backgroundColor': COLORS['card'],
-                           'color': '#333', 'borderRadius': '8px'},
+                    style={'width': '300px', 'backgroundColor': '#FFFFFF',
+                           'color': '#1E293B', 'borderRadius': '6px'},
                 ),
             ], style={'display': 'flex', 'alignItems': 'center', 'marginBottom': '20px', 'marginTop': '20px'}),
 
@@ -585,5 +590,5 @@ def update_bq1(it_filter):
 # Run
 # ──────────────────────────────────────────────────────────────────
 if __name__ == '__main__':
-    print("🚀 Starting dashboard at http://127.0.0.1:8050")
+    print("Starting dashboard at http://127.0.0.1:8050")
     app.run(debug=False, port=8050)

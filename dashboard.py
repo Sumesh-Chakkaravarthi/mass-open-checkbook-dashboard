@@ -315,21 +315,31 @@ def make_bq9_chart():
     return chart_layout(fig, 'BQ9: Industry Diversity – National vs Local vs SGC Target', 500)
 
 
-# ── BQ10: IT Vendor Concentration Donut ──
+# ── BQ10: IT Vendor Concentration — Horizontal Bar ──
 def make_bq10_chart():
     it_df = vendor_df[vendor_df['Category'].isin(['ITE', 'ITS', 'ITT'])]
     company_counts = it_df.groupby('Company')['Contract_Code'].nunique().sort_values(ascending=False)
     top10 = company_counts.head(10)
-    rest = company_counts.iloc[10:].sum()
+    rest_count = len(company_counts) - 10
+    rest_total = company_counts.iloc[10:].sum()
+    total = company_counts.sum()
 
-    labels = list(top10.index) + [f'Other ({len(company_counts)-10} companies)']
-    values = list(top10.values) + [rest]
+    labels = list(reversed(top10.index.tolist())) + [f'Other ({rest_count} vendors)']
+    values = list(reversed(top10.values.tolist())) + [rest_total]
+    pcts = [v / total * 100 for v in values]
 
-    fig = go.Figure(go.Pie(labels=labels, values=values, hole=0.5,
-                           textinfo='label+percent', textposition='outside',
-                           marker=dict(colors=CHART_COLORS + ['#CBD5E1'])))
-    fig.update_layout(showlegend=False)
-    return chart_layout(fig, 'BQ10: IT Sector Vendor Concentration', 500)
+    colors = ['#E2E8F0'] + list(reversed(CHART_COLORS[:10]))
+
+    fig = go.Figure(go.Bar(
+        y=labels, x=values, orientation='h',
+        marker_color=colors,
+        text=[f'{v} ({p:.1f}%)' for v, p in zip(values, pcts)],
+        textposition='outside',
+        textfont=dict(size=11),
+    ))
+    fig.update_layout(xaxis_title='Number of Contracts', yaxis_title='',
+                      showlegend=False)
+    return chart_layout(fig, 'BQ10: IT Sector — Top 10 Vendors by Contract Count', 480)
 
 
 # ── Dashboard-Only: SDO Histogram ──
@@ -342,52 +352,48 @@ def make_sdo_histogram():
     return chart_layout(fig, 'Overall SDO Commitment Distribution (All Categories)', 400)
 
 
-# ── Dashboard-Only: Radar Chart — IT Sub-Categories ──
-def make_it_radar():
-    metrics = []
+# ── Dashboard-Only: IT Sub-Category Comparison — Grouped Bar ──
+def make_it_comparison():
+    rows = []
     for cat in ['ITE', 'ITS', 'ITT']:
         df_cat = vendor_with_sdo[vendor_with_sdo['Category'] == cat]
-        metrics.append({
-            'Category': CATEGORY_NAMES[cat],
-            'Avg SDO': df_cat['SDO_Capped'].mean() * 100,
-            'Median SDO': df_cat['SDO_Capped'].median() * 100,
-            'Max SDO': df_cat['SDO_Capped'].max() * 100,
-            'Vendor Count': len(df_cat),
-            'Coverage Rate': (vendor_df[vendor_df['Category'] == cat]['SDO_Pct'].notna().mean()) * 100,
+        df_all = vendor_df[vendor_df['Category'] == cat]
+        rows.append({
+            'Sub-Category': CATEGORY_NAMES[cat],
+            'Avg SDO %': df_cat['SDO_Capped'].mean() * 100,
+            'Median SDO %': df_cat['SDO_Capped'].median() * 100,
+            'Vendor Count': df_all['Company'].nunique(),
+            'Coverage Rate %': df_all['SDO_Pct'].notna().mean() * 100,
         })
+    df = pd.DataFrame(rows)
 
-    categories_radar = ['Avg SDO', 'Median SDO', 'Max SDO', 'Vendor Count', 'Coverage Rate']
+    fig = make_subplots(rows=1, cols=2, subplot_titles=('SDO Commitment Metrics', 'Vendor Coverage'),
+                        horizontal_spacing=0.15)
 
-    fig = go.Figure()
-    colors_radar = ['#1E40AF', '#7C3AED', '#DC2626']
-    fill_colors = ['rgba(30,64,175,0.12)', 'rgba(124,58,237,0.12)', 'rgba(220,38,38,0.12)']
-    for i, m in enumerate(metrics):
-        vals = [m[c] for c in categories_radar]
-        max_vals = [max(me[c] for me in metrics) for c in categories_radar]
-        normalized = [(v / mx * 100 if mx > 0 else 0) for v, mx in zip(vals, max_vals)]
-        normalized.append(normalized[0])
+    colors = ['#1E40AF', '#7C3AED', '#DC2626']
+    for i, row in df.iterrows():
+        fig.add_trace(go.Bar(name=row['Sub-Category'] if i == 0 or True else None,
+                             x=['Avg SDO %', 'Median SDO %'],
+                             y=[row['Avg SDO %'], row['Median SDO %']],
+                             marker_color=colors[i],
+                             text=[f"{row['Avg SDO %']:.1f}%", f"{row['Median SDO %']:.1f}%"],
+                             textposition='outside',
+                             legendgroup=row['Sub-Category'],
+                             showlegend=True), row=1, col=1)
+        fig.add_trace(go.Bar(name=row['Sub-Category'],
+                             x=['Vendors', 'Coverage %'],
+                             y=[row['Vendor Count'], row['Coverage Rate %']],
+                             marker_color=colors[i],
+                             text=[str(int(row['Vendor Count'])), f"{row['Coverage Rate %']:.0f}%"],
+                             textposition='outside',
+                             legendgroup=row['Sub-Category'],
+                             showlegend=False), row=1, col=2)
 
-        fig.add_trace(go.Scatterpolar(
-            r=normalized,
-            theta=categories_radar + [categories_radar[0]],
-            fill='toself',
-            name=m['Category'],
-            line=dict(color=colors_radar[i], width=2),
-            fillcolor=fill_colors[i],
-            opacity=0.9
-        ))
-
-    fig.update_layout(
-        polar=dict(
-            radialaxis=dict(visible=True, range=[0, 110], gridcolor='#E2E8F0',
-                            tickfont=dict(size=9, color=COLORS['text_muted'])),
-            angularaxis=dict(gridcolor='#E2E8F0',
-                             tickfont=dict(size=11, color=COLORS['text'])),
-            bgcolor='#FFFFFF',
-        ),
-        showlegend=True,
-    )
-    return chart_layout(fig, 'IT Sub-Category Comparison (Normalized Radar)', 450)
+    fig.update_layout(barmode='group', legend=dict(orientation='h', yanchor='bottom',
+                      y=-0.2, xanchor='center', x=0.5))
+    fig.update_yaxes(title_text='Percentage', row=1, col=1)
+    fig.update_yaxes(title_text='Count / %', row=1, col=2)
+    return chart_layout(fig, 'IT Sub-Category Comparison', 480)
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -542,7 +548,7 @@ def render_tab(tab):
 
             html.Div([
                 html.Div([dcc.Graph(figure=make_bq10_chart())], className='chart-card', style={'flex': '1'}),
-                html.Div([dcc.Graph(figure=make_it_radar())], className='chart-card', style={'flex': '1'}),
+                html.Div([dcc.Graph(figure=make_it_comparison())], className='chart-card', style={'flex': '1'}),
             ], style={'display': 'flex', 'gap': '20px'}),
         ])
 

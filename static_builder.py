@@ -319,7 +319,7 @@ bq1_ite = fig_to_html(dashboard.make_bq1_chart('ITE'))
 bq1_its = fig_to_html(dashboard.make_bq1_chart('ITS'))
 bq1_itt = fig_to_html(dashboard.make_bq1_chart('ITT'))
 bq10 = fig_to_html(dashboard.make_bq10_chart())
-it_radar = fig_to_html(dashboard.make_it_radar())
+it_radar = fig_to_html(dashboard.make_it_comparison())
 
 # Tab 2: Cross-Category
 print(" - Building Tab 2...")

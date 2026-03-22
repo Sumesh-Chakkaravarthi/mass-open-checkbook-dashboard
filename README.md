@@ -1,92 +1,129 @@
-# Massachusetts Open Checkbook Dashboard 📊
+# Massachusetts Open Checkbook Dashboard
 
-[![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://www.python.org/)
-[![Dash](https://img.shields.io/badge/Dash-Plotly-informational.svg)](https://dash.plotly.com/)
-[![Pandas & Scikit-Learn](https://img.shields.io/badge/Stack-Pandas_%7C_Scikit--Learn-red.svg)](https://scikit-learn.org/)
-[![Dockerized / CI](https://github.com/Sumesh-Chakkaravarthi/mass-open-checkbook-dashboard/actions/workflows/ci.yml/badge.svg)](https://github.com/Sumesh-Chakkaravarthi/mass-open-checkbook-dashboard/actions)
+[![Python](https://img.shields.io/badge/Python-3.9+-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
+[![Dash](https://img.shields.io/badge/Dash-Plotly-0D6EFD.svg)](https://dash.plotly.com/)
+[![Stack](https://img.shields.io/badge/Stack-Pandas_|_Scikit--Learn-150458.svg)](https://scikit-learn.org/)
+[![CI](https://github.com/Sumesh-Chakkaravarthi/mass-open-checkbook-dashboard/actions/workflows/ci.yml/badge.svg)](https://github.com/Sumesh-Chakkaravarthi/mass-open-checkbook-dashboard/actions)
 
-**[🔴 LIVE DEMO: Click Here](https://sumesh-chakkaravarthi.github.io/mass-open-checkbook-dashboard/)**
-
-An advanced, full-stack data science project exploring the **Massachusetts Open Checkbook** vendor contract data. This repository features an end-to-end data pipeline from Exploratory Data Analysis (EDA) and Predictive Machine Learning to a dynamic, interactive dashboard built with Plotly Dash.
-
-![Dashboard Overview](presentation_visuals/Figure5_Dashboard.jpg)
+**[Live Demo](https://sumesh-chakkaravarthi.github.io/mass-open-checkbook-dashboard/)**
 
 ---
 
-## 📖 Context & Background
-The **Supplier Diversity Office (SDO)** of Massachusetts promotes diversity, equity, and inclusion in state contracting. This project analyzes vendor contracts across the IT Sector, identifying disparities in SDO commitment.
+## Overview
 
-### Key Advanced Features:
-- **Predictive Machine Learning**: A sophisticated Random Forest Regressor trained to predict a vendor's SDO commitment likelihood based on categorical footprint features.
-- **Automated CI/CD**: Fully integrated GitHub Actions pipeline for automated testing and dependency validation.
-- **Interactive Dashboards**: Deep-dive analytics via a multi-page Dash web application.
+An end-to-end data analytics project analyzing **Massachusetts Open Checkbook** vendor contract data. The pipeline covers data ingestion, exploratory analysis, predictive modeling, and interactive visualization — focused on Supplier Diversity Office (SDO) commitment metrics across 15 procurement categories and 10 industry classifications.
 
 ---
 
-## 🤖 Machine Learning Pipeline
-The `train_sdo_model.py` script acts as the core ML engine. It preprocesses raw categorical vendor variables using `OneHotEncoder`, establishes a `ColumnTransformer` baseline, and trains a highly optimized `RandomForestRegressor`.
+## Architecture
 
-### Model Diagnostics & Feature Importance
-The Random Forest model effectively identifies which vendor characteristics (e.g., industry role, contract category) carry the highest predictive weight in terms of Supplier Diversity metrics.
+```
+Data Sources (Excel)
+    |
+    v
+EDA & Feature Engineering (eda_analysis.py)
+    |
+    v
+ML Pipeline (train_sdo_model.py)
+    |   - OneHotEncoder + ColumnTransformer
+    |   - Random Forest Regressor
+    |   - Feature importance analysis
+    v
+Interactive Dashboard (dashboard.py)
+    |   - 4-tab Plotly Dash application
+    |   - KPI cards, filters, drill-downs
+    v
+Static Export (static_builder.py -> index.html)
+    |   - GitHub Pages deployment
+```
+
+---
+
+## Key Features
+
+- **Predictive Modeling** — Random Forest Regressor predicts vendor SDO commitment based on categorical features (contract category, vendor role). Feature importance analysis identifies the strongest predictors.
+- **Interactive Dashboard** — Multi-tab Dash application with real-time filtering, KPI summary cards, and 10+ visualizations across IT sector analysis, cross-category comparison, vendor coverage, and industry diversity.
+- **Automated CI/CD** — GitHub Actions pipeline validates code quality and dependency integrity on every push.
+
+---
+
+## Machine Learning Pipeline
+
+The `train_sdo_model.py` script preprocesses categorical vendor features using `OneHotEncoder`, builds a `ColumnTransformer` pipeline, and trains a `RandomForestRegressor` to predict SDO commitment percentages.
+
+### Feature Importance
 ![Feature Importance](output/ML_Feature_Importance.png)
 
 ---
 
-## 📂 Dataset
-- **Source**: Massachusetts Open Checkbook Public Data
-- Data files are processed via `eda_analysis.py` for visualization and `train_sdo_model.py` for predictive modeling.
+## Visualizations
 
-## 📈 Key Findings & Visualizations
+### Vendor Distribution Across Categories
+![Vendor Distribution](output/BQ3_Vendor_Distribution_Treemap.png)
 
-### 1. Vendor Distribution
-![Vendor Distribution Treemap](output/BQ3_Vendor_Distribution_Treemap.png)
-*A high-level view of vendor category distribution, indicating areas with the highest contract concentration.*
+### Top IT Sector Companies by SDO Commitment
+![Top SDO Companies](output/BQ1_IT_Top_SDO_Companies.png)
 
-### 2. SDO Companies in IT
-![Top SDO Companies in IT](output/BQ1_IT_Top_SDO_Companies.png)
-*Highlighting the top performing Supplier Diversity Office certified companies within the IT sector and their project volume.*
-
-### 3. Industry Diversity 
-![Industry Diversity Heatmap](output/BQ9_Industry_Diversity_Heatmap.png)
-*A visual heatmap showcasing the correlation between diverse industries and SDO coverage rates across multiple dimensions.*
+### Industry Diversity Heatmap
+![Industry Diversity](output/BQ9_Industry_Diversity_Heatmap.png)
 
 ---
 
-## 🚀 How to Run Locally
+## Project Structure
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/Sumesh-Chakkaravarthi/mass-open-checkbook-dashboard.git
-   cd mass-open-checkbook-dashboard
-   ```
+```
+.
+├── dashboard.py            # Interactive Plotly Dash application
+├── eda_analysis.py         # Exploratory data analysis (15 business questions)
+├── train_sdo_model.py      # ML training pipeline
+├── static_builder.py       # Generates static HTML for GitHub Pages
+├── generate_ppt.py         # PowerPoint report generator
+├── generate_report.py      # Word document report generator
+├── generate_visuals.py     # Presentation visual generator
+├── index.html              # Static dashboard (GitHub Pages)
+├── requirements.txt        # Python dependencies
+├── models/
+│   └── sdo_rf_model.pkl    # Trained Random Forest model
+├── output/                 # Generated EDA visualizations (17 PNGs)
+├── presentation_visuals/   # High-level presentation figures
+└── .github/workflows/
+    └── ci.yml              # CI pipeline configuration
+```
 
-2. **Create a virtual environment**:
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate  # On Windows use: .venv\Scripts\activate
-   ```
+---
 
-3. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
+## Getting Started
 
-4. **Launch the Dashboard**:
-   ```bash
-   python dashboard.py
-   ```
-   Open your browser and navigate to `http://127.0.0.1:8050` to view the interactive application.
+```bash
+# Clone
+git clone https://github.com/Sumesh-Chakkaravarthi/mass-open-checkbook-dashboard.git
+cd mass-open-checkbook-dashboard
 
-5. *(Optional) Run the EDA script to regenerate visualizations:*
-   ```bash
-   python eda_analysis.py
-   ```
+# Environment
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 
-## 🧠 About
-This project was developed as a Capstone to demonstrate proficiency in:
-- **Programming**: Python
-- **Data Manipulation**: Pandas, NumPy
-- **Data Visualization**: Plotly, Dash, Matplotlib, Seaborn
-- **Interactive Apps**: Dash Web Applications
+# Launch dashboard
+python dashboard.py
+# Open http://127.0.0.1:8050
+```
 
-Authored by **Sumesh Chakkaravarthi**.
+---
+
+## Tech Stack
+
+| Layer | Tools |
+|-------|-------|
+| Data Processing | Pandas, NumPy, OpenPyXL |
+| Machine Learning | Scikit-Learn (Random Forest, OneHotEncoder) |
+| Visualization | Plotly, Matplotlib, Seaborn |
+| Web Framework | Plotly Dash |
+| CI/CD | GitHub Actions |
+| Deployment | GitHub Pages |
+
+---
+
+## Author
+
+**Sumesh Chakkaravarthi**
